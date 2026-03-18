@@ -14,13 +14,13 @@ from typing import Optional
 # DB saves permanently next to auth_db.py, regardless of working directory
 _HERE   = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(_HERE, "panel_users.db")
-SECRET_KEY   = os.environ.get("PANEL_SECRET", "slv-panel-fixed-secret-key-2025-do-not-change")
+SECRET_KEY   = os.environ.get("PANEL_SECRET") or secrets.token_hex(32)  # set PANEL_SECRET env var in prod
 SESSION_TTL  = 60 * 60 * 24 * 7   # 7 days
 COOKIE_NAME  = "panel_session"
 
 # Google reCAPTCHA keys - set in env or replace here
-RECAPTCHA_SITE_KEY   = os.environ.get("RECAPTCHA_SITE",   "6LcIwY0sAAAAALnE-RjBoQ7BhhE2hg01zuqal7Rj")
-RECAPTCHA_SECRET_KEY = os.environ.get("RECAPTCHA_SECRET", "6LcIwY0sAAAAAPH7R7WAqQfe98daCqWXsocWfsRd")
+RECAPTCHA_SITE_KEY   = os.environ.get("RECAPTCHA_SITE", "")
+RECAPTCHA_SECRET_KEY = os.environ.get("RECAPTCHA_SECRET", "")
 
 # ── DB init ───────────────────────────────────────────────
 def init_db():
@@ -79,12 +79,13 @@ def init_db():
     # Create default admin if no users exist
     cur.execute("SELECT COUNT(*) FROM users")
     if cur.fetchone()[0] == 0:
-        admin_hash = _hash_password("admin123")
+        _admin_pw = os.environ.get("ADMIN_PASSWORD", "admin123")
+        admin_hash = _hash_password(_admin_pw)
         cur.execute("""
             INSERT INTO users (username, email, pass_hash, role, created_at)
             VALUES (?, ?, ?, 'admin', ?)
         """, ("admin", "admin@local", admin_hash, datetime.now().isoformat()))
-        print("[auth_db] Default admin created: admin / admin123")
+        print(f"[auth_db] Default admin created: admin / {_admin_pw}")
     con.commit()
     # Migrate: add new columns if they don't exist yet
     # Migrate: add new tables if missing

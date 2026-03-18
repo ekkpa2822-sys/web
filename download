@@ -1,0 +1,13 @@
+# Секреты — НИКОГДА не заливать на GitHub
+.env
+*.db
+.slaves_session
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+
+# Бекапы
+main_backup.py
+main_mono.py
+main_one.py

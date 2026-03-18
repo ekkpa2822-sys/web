@@ -5,6 +5,14 @@ pip install fastapi uvicorn jinja2 python-multipart requests
 import asyncio, json, os, threading, time, logging, traceback
 from datetime import datetime
 from typing import Optional
+# Load .env file if present (local dev)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+
 
 # ── Logging ──────────────────────────────────────────
 logging.basicConfig(
@@ -1165,7 +1173,9 @@ async def debug_profile(vkid: int, request: Request):
     return JSONResponse(api.api_profile(vkid))
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
+    import os as _os
+    port = int(_os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
 def make_sess(user: dict) -> dict:
     """Build sess context that base.html needs: panel_role, vk_first, vk_last, vk_user_id."""
     base = dict(api.sess) if api.sess else {}
@@ -1178,3 +1188,5 @@ def make_sess(user: dict) -> dict:
     if not base.get("vk_user_id"):
         base["vk_user_id"] = user.get("vk_uid", "")
     return base
+
+
