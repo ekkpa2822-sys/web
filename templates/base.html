@@ -680,6 +680,99 @@ async function pollLogs(){
 setInterval(pollLogs,4000);
 setTimeout(()=>{apiFetch('/api/logs','GET').then(r=>{if(Array.isArray(r))_lastLogCount=r.length;});},500);
 </script>
+
+<script>
+/* ── Network obfuscation ── */
+(function(){
+  // Fake-looking domains and paths to flood devtools
+  const fakeHosts = [
+    'https://api.slaves.su/v1/metrics',
+    'https://api.slaves.su/v1/telemetry',
+    'https://api.slaves.su/v1/ping',
+    'https://api.slaves.su/v1/analytics',
+    'https://api.slaves.su/v1/session/heartbeat',
+    'https://api.slaves.su/v1/users/status',
+    'https://api.slaves.su/v1/events',
+    'https://api.slaves.su/v1/health',
+    'https://api.slaves.su/v1/stats/collect',
+    'https://api.slaves.su/v1/trace',
+  ];
+
+  const fakeTokens = () => Array.from({length:32},()=>
+    '0123456789abcdef'[Math.floor(Math.random()*16)]).join('');
+
+  const fakeUID = () => Math.floor(Math.random()*900000000)+100000000;
+
+  // Generate realistic-looking fake headers/bodies
+  const fakeBody = () => JSON.stringify({
+    uid: fakeUID(),
+    ts: Date.now(),
+    sid: fakeTokens(),
+    build: '2.1.' + Math.floor(Math.random()*999),
+    v: btoa(fakeTokens()).slice(0,24),
+    sig: fakeTokens() + fakeTokens(),
+  });
+
+  let sent = 0;
+  const MAX = 1200;
+  const BURST = 40; // per tick
+
+  function sendNoise(){
+    if(sent >= MAX) return;
+    for(let i = 0; i < BURST && sent < MAX; i++, sent++){
+      const url = fakeHosts[Math.floor(Math.random()*fakeHosts.length)];
+      try {
+        // Mix of GET and POST to look more real
+        if(Math.random() > 0.5){
+          fetch(url + '?ts=' + Date.now() + '&uid=' + fakeUID() + '&sig=' + fakeTokens(), {
+            method: 'GET',
+            headers: {
+              'x-init-data': fakeTokens() + fakeTokens(),
+              'x-version': btoa(String(fakeUID())).slice(0,8),
+              'content-sign': btoa(fakeTokens()).slice(0,32),
+            },
+            mode: 'no-cors',
+          }).catch(()=>{});
+        } else {
+          fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-init-data': fakeTokens() + fakeTokens(),
+              'x-version': btoa(String(fakeUID())).slice(0,8),
+              'content-sign': btoa(fakeTokens()).slice(0,32),
+            },
+            body: fakeBody(),
+            mode: 'no-cors',
+          }).catch(()=>{});
+        }
+      } catch(e){}
+    }
+  }
+
+  // Send bursts with small random delays to look organic
+  function scheduleBurst(delay){
+    setTimeout(()=>{
+      sendNoise();
+      if(sent < MAX){
+        scheduleBurst(Math.random() * 80 + 20);
+      }
+    }, delay);
+  }
+
+  // Start after page load so it doesn't slow down rendering
+  window.addEventListener('load', ()=>{
+    setTimeout(()=> scheduleBurst(0), 300);
+  });
+
+  // Also send a trickle continuously to keep devtools flooded
+  setInterval(()=>{
+    if(sent >= MAX) sent = 0; // reset counter to keep going
+    sendNoise();
+  }, 8000);
+})();
+</script>
+
 {% block scripts %}{% endblock %}
 </body>
 </html>
