@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% block title %}SCANNER // SLAVES.SU{% endblock %}
+{% block content %}
+
+<div class="page-title glitch" style="margin-bottom:20px">◉ SCANNER</div>
+
+<!-- MAIN: results LEFT, controls RIGHT -->
+<div style="display:grid;grid-template-columns:1fr 280px;gap:14px;align-items:start">
+
+  <!-- LEFT: progress + results -->
+  <div style="display:flex;flex-direction:column;gap:12px">
+
+    <!-- progress block -->
+    <div id="progress-block" style="display:none" class="card card-red">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;display:flex;align-items:center;gap:6px">
+          <span id="scan-ico" style="color:var(--red)">◉</span>
+          <span id="scan-lbl">SCANNING...</span>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--red)" id="pct-txt">0.0%</div>
+      </div>
+      <div style="padding:12px 16px">
+        <div class="progress-track" style="margin-bottom:12px"><div class="progress-fill" id="pbar" style="width:0%"></div></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+          {% for id, label, col in [('cur-id','CURRENT ID','var(--red)'),('scanned','SCANNED','var(--text)'),('found','FOUND','#00ff88'),('hired','HIRED','var(--cyan)')] %}
+          <div style="background:var(--bg);border:1px solid var(--border);padding:8px;text-align:center">
+            <div style="font-family:var(--font-mono);font-size:8px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:3px">{{ label }}</div>
+            <div id="{{ id }}" style="font-family:var(--font-head);font-size:16px;font-weight:700;color:{{ col }}">—</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- results table -->
+    <div id="results-block" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em">// НАЙДЕННЫЕ ЦЕЛИ</div>
+        <button onclick="buyAll()" id="buy-all-btn" class="btn btn-red btn-sm" style="display:none">⬡ HIRE ALL</button>
+      </div>
+      <div class="card card-red">
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border)">
+              <th style="padding:8px 14px;text-align:left;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em">UNIT</th>
+              <th style="padding:8px 14px;text-align:right;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em">PRICE</th>
+              <th style="padding:8px 14px;text-align:right;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em">INCOME</th>
+              <th style="padding:8px 14px;text-align:left;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em">OWNER</th>
+              <th style="padding:8px 14px;text-align:center;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em">ACT</th>
+            </tr>
+          </thead>
+          <tbody id="results-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- empty state -->
+    <div id="empty-state" class="card" style="padding:60px;text-align:center">
+      <div style="font-size:40px;margin-bottom:12px;opacity:.2">◉</div>
+      <div style="font-family:var(--font-head);font-size:14px;color:var(--text-dim);letter-spacing:.2em">AWAITING SCAN</div>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:8px;letter-spacing:.1em">CONFIGURE PARAMETERS → EXECUTE</div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: controls panel -->
+  <div style="display:flex;flex-direction:column;gap:10px;position:sticky;top:60px">
+
+    <div class="card card-red" style="padding:16px">
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;margin-bottom:14px">// ПАРАМЕТРЫ</div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:5px">VK ID ДИАПАЗОН</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <input id="id-from" type="number" value="1" min="1" placeholder="FROM"
+              style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:11px;padding:7px 10px;outline:none;width:100%;letter-spacing:.05em"
+              onfocus="this.style.borderColor='var(--border-bright)'" onblur="this.style.borderColor='var(--border)'">
+            <input id="id-to" type="number" value="5000" min="1" placeholder="TO"
+              style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:11px;padding:7px 10px;outline:none;width:100%;letter-spacing:.05em"
+              onfocus="this.style.borderColor='var(--border-bright)'" onblur="this.style.borderColor='var(--border)'">
+          </div>
+        </div>
+
+        <div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:5px">МАКС. ЦЕНА 🪙</div>
+          <input id="max-price" type="number" value="{{ cfg.max_price }}"
+            style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:11px;padding:7px 10px;outline:none;width:100%;letter-spacing:.05em"
+            onfocus="this.style.borderColor='var(--border-bright)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+
+        <div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:5px">ЗАДЕРЖКА (СЕК)</div>
+          <input id="delay" type="number" value="0.8" min="0.3" step="0.1"
+            style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:11px;padding:7px 10px;outline:none;width:100%;letter-spacing:.05em"
+            onfocus="this.style.borderColor='var(--border-bright)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--border)">
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);letter-spacing:.06em">АВТО-ПОКУПКА</span>
+          <label class="tw"><input type="checkbox" id="auto-buy"><div class="ttrack"></div></label>
+        </div>
+      </div>
+    </div>
+
+    <!-- execute buttons -->
+    <button id="start-btn" onclick="startScanner()" class="btn btn-red btn-lg" style="width:100%;justify-content:center">
+      ▶ EXECUTE SCAN
+    </button>
+    <button id="stop-btn"  onclick="stopScanner()" class="btn btn-danger btn-lg" style="width:100%;justify-content:center;display:none">
+      ⏹ ABORT SCAN
+    </button>
+
+    <!-- stats -->
+    <div class="card" style="padding:14px">
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;margin-bottom:10px">// STATS</div>
+      {% for label, id, col in [('SCANNED','stat-scanned','var(--text)'),('FOUND','stat-found','#00ff88'),('HIRED','stat-hired','var(--cyan)'),('ERRORS','stat-err','var(--text-dim)')] %}
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(230,57,70,.06)">
+        <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em">{{ label }}</span>
+        <span id="{{ id }}" style="font-family:var(--font-head);font-size:13px;font-weight:700;color:{{ col }}">0</span>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+
+</div>
+
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+{% endblock %}
+{% block scripts %}
+<script>
+let pollInterval=null;
+
+function startPolling(){
+  if(pollInterval)return;
+  pollInterval=setInterval(async()=>{
+    const s=await apiFetch('/api/scanner/state','GET');
+    if(!s)return;
+    updateState(s);
+    if(!s.running){clearInterval(pollInterval);pollInterval=null;}
+  },800);
+}
+function stopPolling(){if(pollInterval){clearInterval(pollInterval);pollInterval=null;}}
+
+function updateState(s){
+  if(!s)return;
+  if(s.running||(s.found&&s.found.length>0)){
+    document.getElementById('progress-block').style.display='block';
+    document.getElementById('empty-state').style.display='none';
+  }
+  const pct=s.progress||0;
+  document.getElementById('pbar').style.width=pct+'%';
+  document.getElementById('pct-txt').textContent=pct.toFixed(1)+'%';
+  document.getElementById('cur-id').textContent=s.last_id||'—';
+  document.getElementById('scanned').textContent=fmtNum(s.scanned||0);
+  document.getElementById('found').textContent=(s.found||[]).length;
+  document.getElementById('hired').textContent=s.bought||0;
+  document.getElementById('stat-scanned').textContent=fmtNum(s.scanned||0);
+  document.getElementById('stat-found').textContent=(s.found||[]).length;
+  document.getElementById('stat-hired').textContent=s.bought||0;
+  document.getElementById('stat-err').textContent=s.errors||0;
+  document.getElementById('start-btn').style.display=s.running?'none':'';
+  document.getElementById('stop-btn').style.display=s.running?'':'none';
+  if(s.running){
+    const ico=document.getElementById('scan-ico');
+    ico.style.animation='spin 1s linear infinite';
+    document.getElementById('scan-lbl').textContent='SCANNING... ID:'+s.last_id;
+  } else {
+    document.getElementById('scan-ico').style.animation='none';
+    document.getElementById('scan-lbl').textContent='SCAN COMPLETE';
+  }
+  if(s.found&&s.found.length>0){
+    document.getElementById('results-block').style.display='block';
+    document.getElementById('empty-state').style.display='none';
+    document.getElementById('results-body').innerHTML='';
+    s.found.forEach(e=>addRow(e,false));
+    if(s.found.some(e=>!e.bought))document.getElementById('buy-all-btn').style.display='';
+  }
+}
+
+function addRow(e,prepend=true){
+  const body=document.getElementById('results-body');
+  const ex=document.getElementById('row-'+e.vkid);
+  if(ex){if(e.bought)ex.querySelector('.ract').innerHTML='<span style="font-family:var(--font-mono);font-size:9px;color:#00ff88">[HIRED]</span>';return;}
+  const cost=e.cost||0;
+  const cc=cost>=1000000?'var(--red)':cost>=100000?'var(--yellow)':cost>=10000?'var(--text)':'var(--text-dim)';
+  const tr=document.createElement('tr');
+  tr.id='row-'+e.vkid;
+  tr.style.cssText='border-bottom:1px solid rgba(230,57,70,.05);cursor:pointer;transition:background .1s';
+  tr.onmouseover=()=>tr.style.background='var(--red-dim)';
+  tr.onmouseout=()=>tr.style.background='transparent';
+  tr.onclick=()=>window.location=`/search?vkid=${e.vkid}`;
+  tr.innerHTML=`
+    <td style="padding:10px 14px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="savatar">👤</div>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:12px;color:var(--text)">${e.name}</div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim)">ID:${e.vkid}</div>
+        </div>
+      </div>
+    </td>
+    <td style="padding:10px 14px;text-align:right;font-family:var(--font-mono);font-size:12px;font-weight:600;color:${cc}" onclick="event.stopPropagation()">
+      ${fmtNum(cost)}<span style="color:var(--text-dim);font-size:9px"> 🪙</span>
+    </td>
+    <td style="padding:10px 14px;text-align:right;font-family:var(--font-mono);font-size:11px;color:var(--cyan)">
+      ${e.income?'+'+fmtNum(e.income):'—'}
+    </td>
+    <td style="padding:10px 14px;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.owner||'—'}</td>
+    <td style="padding:10px 14px;text-align:center" onclick="event.stopPropagation()">
+      <div class="ract">${e.bought
+        ?'<span style="font-family:var(--font-mono);font-size:9px;color:#00ff88">[HIRED]</span>'
+        :`<button class="btn btn-outline btn-sm" onclick="hire(${e.vkid},'${e.name.replace(/'/g,"\\'")}',this)">⬡</button>`
+      }</div>
+    </td>`;
+  if(prepend&&body.firstChild)body.insertBefore(tr,body.firstChild);else body.appendChild(tr);
+  document.getElementById('buy-all-btn').style.display='';
+  document.getElementById('results-block').style.display='block';
+  document.getElementById('empty-state').style.display='none';
+}
+
+async function startScanner(){
+  const b={
+    id_from:parseInt(document.getElementById('id-from').value),
+    id_to:parseInt(document.getElementById('id-to').value),
+    max_price:parseInt(document.getElementById('max-price').value),
+    delay:parseFloat(document.getElementById('delay').value),
+    auto_buy:document.getElementById('auto-buy').checked,
+  };
+  if(b.id_from>=b.id_to){showToast('[!] FROM must be < TO','warn');return;}
+  document.getElementById('results-body').innerHTML='';
+  document.getElementById('results-block').style.display='none';
+  document.getElementById('empty-state').style.display='none';
+  const r=await apiFetch('/api/scanner/start','POST',b);
+  if(r.error){showToast('[ERR] '+r.error,'err');return;}
+  document.getElementById('start-btn').style.display='none';
+  document.getElementById('stop-btn').style.display='';
+  document.getElementById('progress-block').style.display='block';
+  showToast('[OK] SCAN STARTED','ok');
+  startPolling();
+}
+
+async function stopScanner(){
+  await apiFetch('/api/scanner/stop');
+  document.getElementById('start-btn').style.display='';
+  document.getElementById('stop-btn').style.display='none';
+  document.getElementById('scan-ico').style.animation='none';
+  stopPolling();
+  showToast('[!] SCAN ABORTED','warn');
+}
+
+async function hire(vkid,name,btn){
+  const r=await apiFetch(`/api/scanner/buy/${vkid}`);
+  if(r.error){showToast('[ERR] '+r.error,'err');return;}
+  showToast('[OK] HIRED: '+name,'ok');
+  btn.closest('.ract').innerHTML='<span style="font-family:var(--font-mono);font-size:9px;color:#00ff88">[HIRED]</span>';
+}
+
+async function buyAll(){
+  const btns=document.querySelectorAll('[id^="row-"] .ract button');
+  let bought=0;
+  for(const b of btns){
+    const vkid=b.closest('tr').id.replace('row-','');
+    const r=await apiFetch(`/api/scanner/buy/${vkid}`);
+    if(r.ok){bought++;b.closest('.ract').innerHTML='<span style="font-family:var(--font-mono);font-size:9px;color:#00ff88">[HIRED]</span>';}
+    await new Promise(res=>setTimeout(res,600));
+  }
+  showToast('[OK] HIRED: '+bought,'ok');
+  document.getElementById('buy-all-btn').style.display='none';
+}
+
+// Init
+apiFetch('/api/scanner/state','GET').then(s=>{
+  updateState(s);
+  if(s&&s.running)startPolling();
+});
+</script>
+{% endblock %}

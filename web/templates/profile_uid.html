@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% block title %}ПРОФИЛЬ #{{ target.id }} // ADMIN{% endblock %}
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+  <div>
+    <div class="page-title glitch">ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ</div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:4px;letter-spacing:.1em">
+      ПРОСМОТР АДМИНИСТРАТОРОМ: <span style="color:var(--acc)">{{ admin.username|upper }}</span>
+    </div>
+  </div>
+  <a href="/admin" class="btn btn-ghost btn-sm">← В АДМИН-ПАНЕЛЬ</a>
+</div>
+
+<div style="display:grid;grid-template-columns:280px 1fr;gap:14px;align-items:start">
+
+  <!-- LEFT: user info -->
+  <div style="display:flex;flex-direction:column;gap:10px">
+
+    <!-- avatar card -->
+    <div class="hud-card" style="padding:0;overflow:hidden">
+      <div class="pbanner"></div>
+      <div style="padding:0 16px 16px">
+        <div style="margin-top:-22px;margin-bottom:10px">
+          <div style="width:46px;height:46px;background:var(--acc-dim);border:2px solid var(--acc-bright);
+            display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;
+            font-size:18px;font-weight:900;color:var(--acc);
+            clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%)">
+            {{ target.username[0]|upper }}
+          </div>
+        </div>
+        <div style="font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--acc);letter-spacing:.1em">{{ target.username|upper }}</div>
+        <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:8px;
+            color:{% if target.role=='admin' %}var(--acc){% else %}var(--text-dim){% endif %};
+            border:1px solid {% if target.role=='admin' %}var(--acc-border){% else %}rgba(255,255,255,.08){% endif %};
+            padding:2px 7px;letter-spacing:.1em">
+            {% if target.role=='admin' %}■ ADMIN{% else %}□ USER{% endif %}
+          </span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:8px;padding:2px 7px;letter-spacing:.1em;
+            color:{% if target.is_active %}#00ff88{% else %}#f87171{% endif %};
+            border:1px solid {% if target.is_active %}rgba(0,255,136,.25){% else %}rgba(220,38,38,.3){% endif %}">
+            {% if target.is_active %}ACTIVE{% else %}BANNED{% endif %}
+          </span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:8px;padding:2px 7px;letter-spacing:.1em;
+            color:{% if target.status=='active' %}#00ff88{% elif target.status=='pending_approval' %}var(--yellow){% else %}var(--text-dim){% endif %};
+            border:1px solid rgba(255,255,255,.08)">
+            {{ target.status|upper }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- account data -->
+    <div class="hud-card" style="padding:14px">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.15em;margin-bottom:10px">// АККАУНТ</div>
+      {% for label, val, col in [
+        ('PANEL ID',   target.id,                                    'var(--text)'),
+        ('USERNAME',   target.username,                              'var(--acc)'),
+        ('EMAIL',      target.email or '—',                          'var(--text-dim)'),
+        ('VK UID',     target.vk_uid or '—',                         'var(--cyan)' if target.vk_uid else 'var(--text-dim)'),
+        ('СОЗДАН',     (target.created_at or '')[:16],               'var(--text-dim)'),
+        ('ПОСЛЕДНИЙ ВХОД', (target.last_login or 'NEVER')[:16],     'var(--text-dim)'),
+        ('X-INIT-DATA', '[ЕСТЬ]' if target.has_xi else '[НЕТ]',     '#00ff88' if target.has_xi else '#f87171'),
+      ] %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-dim);letter-spacing:.1em">{{ label }}</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:{{ col }}">{{ val }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- admin controls -->
+    <div class="hud-card" style="padding:14px;border-color:rgba(220,38,38,.35)">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#f87171;letter-spacing:.15em;margin-bottom:10px">// УПРАВЛЕНИЕ</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);width:40px">РОЛЬ</span>
+          <select id="role-sel" style="flex:1;background:rgba(0,0,0,.7);border:1px solid var(--acc-border);color:var(--acc);font-family:'Share Tech Mono',monospace;font-size:10px;padding:5px 8px;outline:none;cursor:pointer">
+            <option value="user"  {% if target.role!='admin' %}selected{% endif %}>USER</option>
+            <option value="admin" {% if target.role=='admin' %}selected{% endif %}>ADMIN</option>
+          </select>
+          <button onclick="setRole()" class="btn btn-outline btn-sm">SET</button>
+        </div>
+        <button onclick="toggleBan()" class="btn {% if target.is_active %}btn-danger{% else %}btn-success{% endif %} btn-sm" style="width:100%">
+          {% if target.is_active %}⛔ ЗАБЛОКИРОВАТЬ{% else %}✓ РАЗБЛОКИРОВАТЬ{% endif %}
+        </button>
+        <div style="display:flex;gap:6px">
+          <input id="new-pw" type="password" placeholder="Новый пароль..." style="flex:1;background:rgba(0,0,0,.7);border:1px solid var(--acc-border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:10px;padding:6px 8px;outline:none" onfocus="this.style.borderColor='var(--acc)'" onblur="this.style.borderColor='var(--acc-border)'">
+          <button onclick="resetPw()" class="btn btn-ghost btn-sm">RESET</button>
+        </div>
+        <button onclick="deleteUser()" class="btn btn-danger btn-sm" style="width:100%;background:rgba(220,38,38,.15)">✕ УДАЛИТЬ АККАУНТ</button>
+      </div>
+    </div>
+
+    {% if target.vk_uid %}
+    <a href="/search?vkid={{ target.vk_uid }}" class="btn btn-outline" style="width:100%;justify-content:center">◎ ДОСЬЕ В ИГРЕ →</a>
+    {% endif %}
+
+  </div>
+
+  <!-- RIGHT: VK profile + xi-data -->
+  <div style="display:flex;flex-direction:column;gap:12px">
+
+    <!-- VK profile -->
+    {% if vk_profile %}
+    {% set photo = vk_profile.photo_url or vk_profile.photo_100 or '' %}
+    {% set vname = vk_profile.first_name ~ ' ' ~ vk_profile.last_name %}
+    <div class="hud-card">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--acc-border);display:flex;align-items:center;justify-content:space-between">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.15em">// VK ПРОФИЛЬ В ИГРЕ</div>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#00ff88;letter-spacing:.1em">● LIVE DATA</span>
+      </div>
+      <div style="padding:14px 16px;display:flex;align-items:center;gap:14px">
+        <div style="width:54px;height:54px;background:var(--acc-dim);border:1px solid var(--acc-bright);
+          overflow:hidden;position:relative;flex-shrink:0;
+          clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%);
+          display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:20px;color:var(--acc)">
+          <span>{{ vname[0]|upper }}</span>
+          {% if photo %}<img src="{{ photo }}" referrerpolicy="no-referrer" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s;z-index:2" onload="this.style.opacity=1;this.previousElementSibling.style.display='none'" onerror="this.remove()">{% endif %}
+        </div>
+        <div style="flex:1">
+          <div style="font-family:'Orbitron',monospace;font-size:15px;font-weight:700;color:var(--acc)">{{ vname|upper }}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:5px;display:flex;gap:14px;flex-wrap:wrap">
+            <span>VK ID: <span style="color:var(--cyan)">{{ vk_profile.vkid or target.vk_uid }}</span></span>
+            <span style="color:var(--yellow)">⬡ {{ fmt(vk_profile.balance) }}</span>
+            <span style="color:var(--acc)">⛓ {{ vk_profile.slaves_count or 0 }}</span>
+            <span style="color:var(--cyan)">▲ {{ fmt(vk_profile.income) }}/ч</span>
+          </div>
+          {% if vk_profile.group %}
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:3px">КЛАН: <span style="color:var(--acc)">{{ vk_profile.group.name }}</span></div>
+          {% endif %}
+        </div>
+        <a href="/search?vkid={{ vk_profile.vkid or target.vk_uid }}" class="btn btn-outline btn-sm">ДОСЬЕ →</a>
+      </div>
+      <!-- stats grid -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;border-top:1px solid var(--acc-border)">
+        {% for label, val, col in [
+          ('БАЛАНС',   fmt(vk_profile.balance),       'var(--yellow)'),
+          ('ДОХОД/Ч',  fmt(vk_profile.income),        'var(--cyan)'),
+          ('РАБОВ',    vk_profile.slaves_count or 0,  'var(--acc)'),
+          ('ЦЕНА',     fmt(vk_profile.cost),           'var(--text)'),
+        ] %}
+        <div style="padding:10px;text-align:center;background:rgba(0,0,0,.3)">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:3px">{{ label }}</div>
+          <div style="font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:{{ col }}">{{ val }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% elif target.has_xi %}
+    <div class="hud-card" style="padding:20px;text-align:center">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--yellow)">⚠ X-INIT-DATA УСТАРЕЛ ИЛИ НЕДЕЙСТВИТЕЛЕН</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:6px">Токен не прошёл проверку — пользователь должен обновить x-init-data</div>
+      <button onclick="rejectUser()" class="btn btn-danger btn-sm" style="margin-top:12px">↺ СБРОСИТЬ — ПОПРОСИТЬ НОВЫЙ</button>
+    </div>
+    {% else %}
+    <div class="hud-card" style="padding:20px;text-align:center">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim)">VK СЕССИЯ НЕ ПРИВЯЗАНА</div>
+    </div>
+    {% endif %}
+
+    <!-- Slaves preview -->
+    {% if vk_slaves %}
+    <div class="hud-card">
+      <div style="padding:10px 16px;border-bottom:1px solid var(--acc-border);display:flex;align-items:center;justify-content:space-between">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.15em">// РАБЫ (ТОП-20)</div>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--acc)">{{ vk_slaves|length }} UNITS</span>
+      </div>
+      <div style="max-height:280px;overflow-y:auto">
+        {% for s in vk_slaves %}
+        {% set sname = s.first_name ~ ' ' ~ s.last_name %}
+        {% set photo = s.photo_url or s.photo_100 or '' %}
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.03);cursor:pointer;transition:background .1s" onclick="window.location='/search?vkid={{ s.vkid }}'" onmouseover="this.style.background='var(--acc-dim)'" onmouseout="this.style.background='transparent'">
+          <div class="ava" style="width:30px;height:30px;font-size:10px;flex-shrink:0">
+            <div class="ava-letter" style="font-size:10px">{{ sname[0]|upper }}</div>
+            {% if photo %}<img src="{{ photo }}" referrerpolicy="no-referrer" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;opacity:0;transition:opacity .3s" onload="this.style.opacity=1;this.previousElementSibling.style.display='none'" onerror="this.remove()">{% endif %}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ sname }}</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-dim)">ID:{{ s.vkid }}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:600;color:{% if s.cost>=1000000 %}var(--acc){% elif s.cost>=100000 %}var(--yellow){% else %}var(--text-dim){% endif %}">{{ fmt(s.cost or 0) }}</div>
+            {% if s.salary or s.income %}<div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--cyan)">+{{ fmt(s.salary or s.income) }}/ч</div>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- x-init-data (admin only, full token) -->
+    {% if target.has_xi %}
+    <div class="hud-card" style="border-color:rgba(255,214,10,.25)">
+      <div style="padding:10px 16px;border-bottom:1px solid rgba(255,214,10,.15);display:flex;align-items:center;justify-content:space-between">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--yellow);letter-spacing:.15em">// X-INIT-DATA [ADMIN ONLY]</div>
+        <button onclick="loadXI()" class="btn btn-sm" style="background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.3);color:var(--yellow);font-size:9px">👁 ПОКАЗАТЬ</button>
+      </div>
+      <div id="xi-block" style="display:none;padding:12px 14px">
+        <div id="xi-content" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);word-break:break-all;line-height:1.6;background:rgba(0,0,0,.5);padding:10px;border:1px solid rgba(255,255,255,.06)">Загрузка...</div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button onclick="copyXI()" class="btn btn-ghost btn-sm">КОПИРОВАТЬ</button>
+          <button onclick="rejectUser()" class="btn btn-danger btn-sm">↺ СБРОСИТЬ ТОКЕН</button>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const UID = {{ target.id }};
+
+async function setRole(){
+  const role = document.getElementById('role-sel').value;
+  const r = await apiFetch(`/api/admin/user/${UID}`, 'POST', {action:'set_role', role});
+  if(r.ok) showToast('[OK] РОЛЬ ИЗМЕНЕНА','ok');
+  else showToast('[ERR] '+(r.error||'FAILED'),'err');
+}
+
+async function toggleBan(){
+  const r = await apiFetch(`/api/admin/user/${UID}`, 'POST', {action:'toggle'});
+  if(r.ok){showToast('[OK] СТАТУС ИЗМЕНЁН','ok'); setTimeout(()=>location.reload(),800);}
+  else showToast('[ERR] '+(r.error||'FAILED'),'err');
+}
+
+async function resetPw(){
+  const pw = document.getElementById('new-pw').value;
+  if(!pw || pw.length < 6){showToast('[!] МИН 6 СИМВОЛОВ','warn'); return;}
+  const r = await apiFetch(`/api/admin/user/${UID}`, 'POST', {action:'reset_password', password:pw});
+  if(r.ok) showToast('[OK] ПАРОЛЬ СБРОШЕН','ok');
+  else showToast('[ERR] '+(r.error||'FAILED'),'err');
+}
+
+async function deleteUser(){
+  if(!confirm('УДАЛИТЬ ПОЛЬЗОВАТЕЛЯ?\n\nЭто необратимо.')) return;
+  const r = await fetch(`/api/admin/user/${UID}`, {method:'DELETE'});
+  const d = await r.json();
+  if(d.ok){showToast('[OK] УДАЛЁН','ok'); setTimeout(()=>window.location='/admin',800);}
+  else showToast('[ERR] '+(d.error||'FAILED'),'err');
+}
+
+async function rejectUser(){
+  if(!confirm('Сбросить x-init-data? Пользователь должен будет ввести заново.')) return;
+  const r = await apiFetch(`/api/admin/reject/${UID}`, 'POST', {});
+  if(r.ok){showToast('[>] ТОКЕН СБРОШЕН','info'); setTimeout(()=>location.reload(),800);}
+  else showToast('[ERR] '+(r.error||'FAILED'),'err');
+}
+
+let xiLoaded = null;
+async function loadXI(){
+  const block = document.getElementById('xi-block');
+  const content = document.getElementById('xi-content');
+  block.style.display = 'block';
+  if(xiLoaded){content.textContent = xiLoaded; return;}
+  const r = await apiFetch(`/api/admin/get-xi/${UID}`, 'GET');
+  if(r.xi){
+    xiLoaded = r.xi;
+    content.textContent = r.xi;
+    content.style.color = 'var(--acc)';
+  } else {
+    content.textContent = '[ERR] ' + (r.error || 'Нет доступа');
+    content.style.color = '#f87171';
+  }
+}
+
+function copyXI(){
+  if(!xiLoaded){showToast('[!] Сначала загрузи','warn'); return;}
+  navigator.clipboard.writeText(xiLoaded).then(()=>showToast('[OK] СКОПИРОВАНО','ok'));
+}
+</script>
+{% endblock %}

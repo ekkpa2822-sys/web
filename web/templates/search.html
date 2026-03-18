@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+{% block title %}ДОСЬЕ // SLAVES.SU{% endblock %}
+{% block content %}
+
+<div class="page-title glitch" style="margin-bottom:20px">ДОСЬЕ ИГРОКА</div>
+
+<div style="background:var(--bg2);border:1px solid var(--border);padding:14px;margin-bottom:20px">
+  <form method="get" action="/search" style="display:flex;gap:10px">
+    <div style="flex:1;position:relative">
+      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-family:var(--font-mono);font-size:11px">◎</span>
+      <input type="text" name="vkid" value="{{ vkid }}" placeholder="ENTER VK ID..."
+        style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:13px;padding:9px 12px 9px 30px;outline:none;width:100%;letter-spacing:.05em"
+        onfocus="this.style.borderColor='var(--border-bright)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
+    <button type="submit" class="btn btn-red">◉ ПОИСК</button>
+  </form>
+</div>
+
+{% if error %}
+<div style="background:rgba(230,57,70,.1);border:1px solid var(--border-bright);padding:12px 16px;color:var(--red);font-family:var(--font-mono);font-size:11px;margin-bottom:16px;letter-spacing:.06em">
+  [ERR] {{ error }}
+</div>
+{% endif %}
+
+{% if player %}
+{% set cost     = player.cost or player.sale_price or 0 %}
+{% set income   = player.income or player.salary or 0 %}
+{% set owner_raw = player.owner or player.master_id %}
+{% set sc       = player.slaves_count or 0 %}
+{% set photo    = player.photo_url or player.photo_100 or player.photo_200 or '' %}
+{% set pname    = player.first_name ~ ' ' ~ player.last_name %}
+
+<div style="display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start">
+
+  <!-- profile card -->
+  <div>
+    <div class="card card-red" style="overflow:hidden">
+      <!-- banner -->
+      <div class="pbanner" style="height:60px">
+        <div style="position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);font-family:var(--font-head);font-size:50px;color:var(--red);opacity:.05;white-space:nowrap">SLAVE</div>
+      </div>
+      <!-- avatar -->
+      <div style="display:flex;justify-content:center;margin-top:-28px;position:relative;z-index:2">
+        <div class="ava" style="width:56px;height:56px;font-size:20px;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))">
+          <div class="ava-letter" style="font-size:20px">{{ pname[0].upper() }}</div>
+          {% if photo %}<img src="{{ photo }}" referrerpolicy="no-referrer" loading="lazy" style="opacity:0;transition:opacity .3s;z-index:2" onload="this.style.opacity=1;this.previousElementSibling.style.display='none'" onerror="this.remove()">{% endif %}
+        </div>
+      </div>
+      <!-- name -->
+      <div style="text-align:center;padding:8px 16px 4px">
+        <div style="font-family:var(--font-head);font-size:14px;font-weight:700;color:var(--red);text-shadow:0 0 10px var(--red-glow);letter-spacing:.08em">{{ pname|upper }}</div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:2px;letter-spacing:.1em">ID:{{ vkid }}</div>
+        <div style="margin-top:6px;display:flex;justify-content:center">
+          {% if is_my(owner_raw) %}<span style="font-family:var(--font-mono);font-size:9px;color:var(--cyan);border:1px solid var(--cyan);padding:2px 8px;letter-spacing:.08em">YOUR SLAVE</span>
+          {% elif owner_raw is none %}<span style="font-family:var(--font-mono);font-size:9px;color:#00ff88;border:1px solid #00ff88;padding:2px 8px;letter-spacing:.08em">FREE AGENT</span>
+          {% else %}<span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim)">EMPLOYED BY <span style="color:var(--yellow)">{% if owner_raw is mapping %}{{ owner_raw.first_name }} {{ owner_raw.last_name }}{% else %}id:{{ owner_raw }}{% endif %}</span></span>
+          {% endif %}
+        </div>
+      </div>
+      <!-- data rows -->
+      <div style="padding:8px 16px 12px">
+        {% for ico, label, val, col in [
+          ('⬡', 'ДЕНЬГИ',    fmt(player.balance) ~ ' 🪙', 'var(--yellow)'),
+          ('▲', 'ПРИНОСИТ',  fmt(income) ~ ' 🪙/ч',        'var(--cyan)'),
+          ('⛓', 'РАБОВ',    sc,                             'var(--red)'),
+          ('▣', 'КЛАН',     player.group.name if player.group else '—', 'var(--text)' if player.group else 'var(--text-dim)'),
+        ] %}
+        <div class="irow">
+          <span class="ikey"><span style="margin-right:6px;opacity:.5">{{ ico }}</span>{{ label }}</span>
+          <span class="ival" style="color:{{ col }}">{{ val }}</span>
+        </div>
+        {% endfor %}
+        {% if player.shield %}
+        <div class="irow"><span class="ikey"><span style="margin-right:6px;opacity:.5">◉</span>ЩИТ ДО</span><span class="ival" style="color:#4da6ff">{{ fmt_date(player.shield) }}</span></div>
+        {% endif %}
+        {% if player.fetters %}
+        <div class="irow"><span class="ikey"><span style="margin-right:6px;opacity:.5">⛓</span>ОКОВЫ ДО</span><span class="ival" style="color:var(--yellow)">{{ fmt_date(player.fetters) }}</span></div>
+        {% endif %}
+        <div class="irow">
+          <span class="ikey"><span style="margin-right:6px;opacity:.5">$</span>ЦЕНА</span>
+          <span class="ival" style="color:{% if cost>=1000000 %}var(--red){% elif cost>=100000 %}var(--yellow){% else %}var(--text){% endif %};font-family:var(--font-head);font-size:13px">{{ fmt(cost) }}</span>
+        </div>
+        {% if cost and income and income > 0 %}
+        {% set ph = cost / income %}
+        <div class="irow" style="border:none">
+          <span class="ikey"><span style="margin-right:6px;opacity:.5">⏱</span>ОКУПАЕМОСТЬ</span>
+          <span class="ival" style="color:{% if ph<24 %}#00ff88{% elif ph<168 %}var(--yellow){% else %}var(--red){% endif %}">
+            {% if ph<1 %}{{ (ph*60)|int }}м{% elif ph<24 %}{{ "%.1f"|format(ph) }}ч{% elif ph<168 %}{{ "%.1f"|format(ph/24) }}д{% else %}{{ (ph/24)|int }}д{% endif %}
+          </span>
+        </div>
+        {% endif %}
+      </div>
+      <!-- action -->
+      <div style="padding:0 14px 14px">
+        {% if is_my(owner_raw) %}
+        <div style="border:1px solid var(--border);padding:9px;text-align:center;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);letter-spacing:.08em">OWNED BY YOU</div>
+        {% elif cost and cost > 0 %}
+        <button onclick="buyPlayer({{ vkid }},{{ cost }},'{{ pname }}')" class="btn btn-red btn-lg" style="width:100%;justify-content:center">
+          ⬡ НАНЯТЬ ЗА {{ fmt(cost) }} 🪙
+        </button>
+        {% endif %}
+        <a href="https://vk.com/id{{ vkid }}" target="_blank" style="display:block;text-align:center;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:8px;letter-spacing:.08em;text-decoration:none;transition:color .15s" onmouseover="this.style.color='var(--cyan)'" onmouseout="this.style.color='var(--text-dim)'">[OPEN VK PROFILE ↗]</a>
+      </div>
+    </div>
+
+    <!-- mini stats -->
+    {% if slaves %}
+    <div class="card" style="padding:14px;margin-top:10px">
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.12em;margin-bottom:10px">// SLAVE PORTFOLIO</div>
+      {% for label, val, col in [('ВСЕГО',slaves|length,'var(--red)'),('СТОИМОСТЬ',fmt(total_slave_cost)~' 🪙','var(--yellow)'),('ДОХОД/ч',fmt(total_slave_inc)~' 🪙','var(--cyan)')] %}
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(230,57,70,.06)">
+        <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.06em">{{ label }}</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:{{ col }}">{{ val }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- slaves + autobuy -->
+  <div style="display:flex;flex-direction:column;gap:12px">
+
+    {% if slaves %}
+    <!-- autobuy panel -->
+    <div class="card card-red" style="padding:16px">
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--red);letter-spacing:.15em;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
+        <span>// АВТО-СКУПКА РАБОВ</span>
+        <span id="buyable-badge" style="color:var(--text-dim)">{{ slaves|selectattr('cost','gt',0)|list|length }} UNITS</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+        <div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:5px">MAX PRICE</div>
+          <input id="ab-max" type="number" value="500000" class="input-hud" oninput="updateBuyCount()">
+        </div>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:5px">MIN PRICE</div>
+          <input id="ab-min" type="number" value="0" class="input-hud" oninput="updateBuyCount()">
+        </div>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:5px">DELAY (S)</div>
+          <input id="ab-delay" type="number" value="0.8" step="0.1" min="0.3" class="input-hud">
+        </div>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:5px">SORT</div>
+          <select id="ab-sort" class="input-hud" style="cursor:pointer">
+            <option value="cheap">CHEAPEST</option>
+            <option value="expensive">EXPENSIVE</option>
+            <option value="payback">PAYBACK</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+        {% for id, label, col in [('ab-count','TARGETS','var(--red)'),('ab-sum','TOTAL','var(--yellow)'),('ab-bought','BOUGHT','var(--cyan)'),('ab-err','ERRORS','var(--text-dim)')] %}
+        <div style="background:var(--bg);border:1px solid var(--border);padding:8px;text-align:center">
+          <div style="font-family:var(--font-mono);font-size:8px;color:var(--text-dim);letter-spacing:.1em;margin-bottom:3px">{{ label }}</div>
+          <div id="{{ id }}" style="font-family:var(--font-head);font-size:14px;font-weight:700;color:{{ col }}">0</div>
+        </div>
+        {% endfor %}
+      </div>
+      <div id="ab-prog-wrap" style="display:none;margin-bottom:10px">
+        <div class="progress-track"><div class="progress-fill" id="ab-bar" style="width:0%"></div></div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:4px" id="ab-lbl">INITIALIZING...</div>
+      </div>
+      <div id="ab-log" style="display:none;max-height:100px;overflow-y:auto;font-family:var(--font-mono);font-size:10px;margin-bottom:10px;border:1px solid var(--border);padding:8px;background:var(--bg)"></div>
+      <div style="display:flex;gap:8px">
+        <button id="ab-start" onclick="startAutoBuy()" class="btn btn-red" style="flex:1">▶ EXECUTE</button>
+        <button id="ab-stop"  onclick="stopAutoBuy()"  class="btn btn-danger" style="display:none;flex:1">⏹ ABORT</button>
+        <button onclick="selectAllSlaves()"  class="btn btn-outline btn-sm">ALL</button>
+        <button onclick="selectNoneSlaves()" class="btn btn-outline btn-sm">NONE</button>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- slaves list -->
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.12em">// SLAVE ROSTER — {{ sc }} UNITS</div>
+      </div>
+      {% if slaves %}
+      <div class="card card-red" style="max-height:400px;overflow-y:auto">
+        <!-- header -->
+        <div style="display:grid;grid-template-columns:28px 36px 1fr auto auto 80px;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:5">
+          <div><input type="checkbox" id="s-chk-all" onchange="toggleSlavesAll(this.checked)" style="accent-color:var(--red);cursor:pointer;width:13px;height:13px"></div>
+          <div></div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em">UNIT</div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em;text-align:right">СТОИМОСТЬ</div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em;text-align:right">ДОХОД</div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em;text-align:center">STATUS</div>
+        </div>
+        {% for s in slaves %}
+        {% set scost = s.cost or 0 %}
+        {% set sphoto = s.photo_url or s.photo_100 or '' %}
+        {% set ssname = s.first_name ~ ' ' ~ s.last_name %}
+        <div id="srow-{{ s.vkid }}" data-vkid="{{ s.vkid }}" data-cost="{{ scost }}" data-income="{{ s.salary or s.income or 0 }}" data-name="{{ ssname }}"
+          style="display:grid;grid-template-columns:28px 36px 1fr auto auto 80px;gap:8px;padding:8px 14px;border-bottom:1px solid rgba(230,57,70,.05);align-items:center;cursor:pointer;transition:background .1s"
+          onclick="window.location='/search?vkid={{ s.vkid }}'" onmouseover="this.style.background='var(--red-dim)'" onmouseout="this.style.background='transparent'">
+          <div onclick="event.stopPropagation()">
+            <input type="checkbox" class="s-chk" data-vkid="{{ s.vkid }}" data-cost="{{ scost }}" {% if scost > 0 %}checked{% endif %}
+              style="accent-color:var(--red);cursor:pointer;width:13px;height:13px" onchange="updateBuyCount()">
+          </div>
+          <div class="ava" style="width:32px;height:32px;flex-shrink:0">
+            <div class="ava-letter" style="font-size:11px">{{ ssname[0].upper() }}</div>
+            {% if sphoto %}<img src="{{ sphoto }}" referrerpolicy="no-referrer" loading="lazy" style="opacity:0;transition:opacity .3s;z-index:2" onload="this.style.opacity=1;this.previousElementSibling.style.display='none'" onerror="this.remove()">{% endif %}
+          </div>
+          <div style="min-width:0">
+            <div style="font-family:var(--font-mono);font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ssname }}</div>
+            <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim)">ID:{{ s.vkid }}{% if s.job %} · {{ s.job }}{% endif %}</div>
+          </div>
+          <div style="text-align:right;white-space:nowrap">
+            <span style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:{% if scost>=1000000 %}var(--red){% elif scost>=100000 %}var(--yellow){% elif scost>=10000 %}var(--text){% else %}var(--text-dim){% endif %}">{{ fmt(scost) }}</span>
+            <span style="font-size:9px;color:var(--text-dim)"> 🪙</span>
+          </div>
+          <div style="text-align:right;white-space:nowrap">
+            {% set sinc = s.salary or s.income or 0 %}
+            {% if sinc %}<span style="font-family:var(--font-mono);font-size:11px;color:var(--cyan)">+{{ fmt(sinc) }}</span>
+            {% else %}<span style="color:var(--text-dim);font-size:11px">—</span>{% endif %}
+          </div>
+          <div id="st-{{ s.vkid }}" style="text-align:center;font-family:var(--font-mono);font-size:9px;color:var(--text-dim)" onclick="event.stopPropagation()">
+            {% if scost == 0 %}<span style="color:var(--text-dim);opacity:.4">N/A</span>
+            {% else %}<span style="color:var(--text-dim);opacity:.4">READY</span>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="card" style="padding:40px;text-align:center;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);letter-spacing:.1em">NO SLAVES FOUND</div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endif %}
+
+<style>
+.input-hud{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:11px;padding:6px 10px;outline:none;width:100%;letter-spacing:.05em;transition:border-color .15s}
+.input-hud:focus{border-color:var(--border-bright)}
+</style>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const SLAVES = [{% for s in slaves %}{vkid:{{ s.vkid }},cost:{{ s.cost or 0 }},income:{{ s.salary or s.income or 0 }},name:"{{ s.first_name }} {{ s.last_name }}"},{% endfor %}];
+let abStop=false;
+
+function getSel(){return Array.from(document.querySelectorAll('.s-chk:checked')).map(e=>SLAVES.find(s=>s.vkid==e.dataset.vkid)).filter(Boolean);}
+function updateBuyCount(){
+  const mx=parseInt(document.getElementById('ab-max').value)||999999999;
+  const mn=parseInt(document.getElementById('ab-min').value)||0;
+  document.querySelectorAll('.s-chk').forEach(c=>{if(+c.dataset.cost>0)c.checked=+c.dataset.cost>=mn&&+c.dataset.cost<=mx;});
+  const sel=getSel();
+  document.getElementById('ab-count').textContent=sel.length;
+  document.getElementById('ab-sum').textContent=sel.length?fmtNum(sel.reduce((a,s)=>a+s.cost,0)):0;
+  document.getElementById('buyable-badge').textContent=sel.length+' UNITS';
+}
+function toggleSlavesAll(c){document.querySelectorAll('.s-chk').forEach(x=>{if(+x.dataset.cost>0)x.checked=c;});updateBuyCount();}
+function selectAllSlaves(){toggleSlavesAll(true);}
+function selectNoneSlaves(){toggleSlavesAll(false);}
+
+function abLog(msg,type='info'){
+  const el=document.getElementById('ab-log');
+  el.style.display='block';
+  const c={ok:'#00ff88',err:'var(--red)',warn:'var(--yellow)',info:'var(--text-dim)'};
+  const p={ok:'[OK]',err:'[ERR]',warn:'[!]',info:'[>]'};
+  const d=document.createElement('div');
+  d.style.cssText='display:flex;gap:6px;padding:2px 0;font-size:10px';
+  d.innerHTML=`<span style="color:${c[type]||c.info};flex-shrink:0">${p[type]||p.info}</span><span style="color:${c[type]||c.info}">${msg}</span>`;
+  el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+
+async function startAutoBuy(){
+  const sel=getSel();
+  if(!sel.length){showToast('[!] NO TARGETS','warn');return;}
+  const sort=document.getElementById('ab-sort').value;
+  const delay=Math.max(0.3,parseFloat(document.getElementById('ab-delay').value)||0.8)*1000;
+  let targets=[...sel];
+  if(sort==='cheap')    targets.sort((a,b)=>a.cost-b.cost);
+  if(sort==='expensive')targets.sort((a,b)=>b.cost-a.cost);
+  if(sort==='payback')  targets.sort((a,b)=>{const ra=a.income>0?a.cost/a.income:999999;const rb=b.income>0?b.cost/b.income:999999;return ra-rb;});
+  const total=targets.reduce((a,s)=>a+s.cost,0);
+  if(!confirm(`EXECUTE AUTOBUY\n${targets.length} UNITS / ${fmtNum(total)} 🪙`))return;
+
+  abStop=false;
+  document.getElementById('ab-start').style.display='none';
+  document.getElementById('ab-stop').style.display='';
+  document.getElementById('ab-prog-wrap').style.display='block';
+  document.getElementById('ab-log').innerHTML='';
+  abLog(`START: ${targets.length} units, ${fmtNum(total)} 🪙`,'info');
+
+  let bought=0,errors=0;
+  document.getElementById('ab-bought').textContent=0;
+  document.getElementById('ab-err').textContent=0;
+
+  for(let i=0;i<targets.length;i++){
+    if(abStop){abLog('ABORTED BY USER','warn');break;}
+    const s=targets[i];
+    const pct=Math.round(i/targets.length*100);
+    document.getElementById('ab-bar').style.width=pct+'%';
+    document.getElementById('ab-lbl').textContent=`[${i+1}/${targets.length}] ${s.name} — ${fmtNum(s.cost)} 🪙`;
+    const stEl=document.getElementById(`st-${s.vkid}`);
+    if(stEl)stEl.innerHTML='<span style="color:var(--yellow);animation:blink .5s step-end infinite">PROC</span>';
+    const r=await apiFetch(`/api/buy/${s.vkid}`);
+    if(r.ok||r.new_balance!==undefined){
+      bought++;document.getElementById('ab-bought').textContent=bought;
+      abLog(`${s.name} / ${fmtNum(s.cost)} 🪙 / BAL:${fmtNum(r.new_balance)}`,'ok');
+      if(stEl)stEl.innerHTML='<span style="color:#00ff88">HIRED</span>';
+      const row=document.getElementById(`srow-${s.vkid}`);if(row)row.style.opacity='.4';
+    } else {
+      errors++;document.getElementById('ab-err').textContent=errors;
+      abLog(`FAIL: ${s.name} — ${r.error||'NO RESPONSE'}`,'err');
+      if(stEl)stEl.innerHTML='<span style="color:var(--red)">FAIL</span>';
+    }
+    if(i<targets.length-1&&!abStop)await new Promise(res=>setTimeout(res,delay));
+  }
+  document.getElementById('ab-bar').style.width='100%';
+  document.getElementById('ab-lbl').textContent=`COMPLETE: ${bought} HIRED / ${errors} FAILED`;
+  abLog(`=== RESULT: ${bought} bought / ${errors} failed ===`,bought>0?'ok':'warn');
+  showToast(`[OK] HIRED: ${bought} / FAILED: ${errors}`,bought>0?'ok':'warn');
+  document.getElementById('ab-start').style.display='';
+  document.getElementById('ab-stop').style.display='none';
+}
+function stopAutoBuy(){abStop=true;document.getElementById('ab-start').style.display='';document.getElementById('ab-stop').style.display='none';}
+
+async function buyPlayer(vkid,cost,name){
+  if(!confirm(`BUY: ${name}\nCOST: ${fmtNum(cost)} 🪙`))return;
+  const r=await apiFetch(`/api/buy/${vkid}`);
+  if(r.error){showToast('[ERR] '+r.error,'err');return;}
+  showToast('[OK] HIRED: '+name,'ok');
+  setTimeout(()=>location.reload(),1200);
+}
+
+updateBuyCount();
+</script>
+{% endblock %}

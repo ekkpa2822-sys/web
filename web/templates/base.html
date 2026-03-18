@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="red">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}⛓ SLAVES PANEL{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ══════════════════════════════════════════
+       THEME SYSTEM
+    ══════════════════════════════════════════ */
+    :root {
+      --acc:        #dc2626;
+      --acc-dim:    rgba(220,38,38,.12);
+      --acc-glow:   rgba(220,38,38,.5);
+      --acc-border: rgba(220,38,38,.3);
+      --acc-bright: rgba(220,38,38,.7);
+      --bg:         #000;
+      --bg2:        #0a0a0a;
+      --bg3:        #111;
+      --text:       #ccc;
+      --text-dim:   #444;
+    }
+    [data-theme="cyan"]{
+      --acc:#0ea5e9;--acc-dim:rgba(14,165,233,.12);--acc-glow:rgba(14,165,233,.5);
+      --acc-border:rgba(14,165,233,.3);--acc-bright:rgba(14,165,233,.7);
+      --bg2:#08090d;--bg3:#0d0e14;
+    }
+    [data-theme="green"]{
+      --acc:#16a34a;--acc-dim:rgba(22,163,74,.12);--acc-glow:rgba(22,163,74,.5);
+      --acc-border:rgba(22,163,74,.3);--acc-bright:rgba(22,163,74,.7);
+      --bg2:#070a07;--bg3:#0a0f0a;
+    }
+    [data-theme="purple"]{
+      --acc:#9333ea;--acc-dim:rgba(147,51,234,.12);--acc-glow:rgba(147,51,234,.5);
+      --acc-border:rgba(147,51,234,.3);--acc-bright:rgba(147,51,234,.7);
+      --bg2:#08060e;--bg3:#0d0916;
+    }
+    [data-theme="orange"]{
+      --acc:#ea580c;--acc-dim:rgba(234,88,12,.12);--acc-glow:rgba(234,88,12,.5);
+      --acc-border:rgba(234,88,12,.3);--acc-bright:rgba(234,88,12,.7);
+      --bg2:#0d0800;--bg3:#120c00;
+    }
+    [data-theme="gold"]{
+      --acc:#d97706;--acc-dim:rgba(217,119,6,.12);--acc-glow:rgba(217,119,6,.5);
+      --acc-border:rgba(217,119,6,.3);--acc-bright:rgba(217,119,6,.7);
+      --bg2:#0c0a00;--bg3:#110e00;
+    }
+
+    /* ══════════════════════════════════════════
+       BASE
+    ══════════════════════════════════════════ */
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;overflow:hidden}
+    body{background:var(--bg);font-family:'Inter',sans-serif;color:var(--text);cursor:default}
+
+    /* scanlines */
+    body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9990;
+      background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+
+    /* animated scan line */
+    .bg-hud{display:none}
+    .scan-beam{position:fixed;left:0;right:0;height:1px;z-index:1;pointer-events:none;
+      background:linear-gradient(90deg,transparent,var(--acc) 50%,transparent);
+      opacity:.4;animation:scanBeam 14s linear infinite}
+    @keyframes scanBeam{0%{top:-1px;opacity:0}3%{opacity:.3}97%{opacity:.15}100%{top:100%;opacity:0}}
+
+    /* grid */
+    .bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;
+      background-image:linear-gradient(var(--acc-dim) 1px,transparent 1px),
+                       linear-gradient(90deg,var(--acc-dim) 1px,transparent 1px);
+      background-size:44px 44px;opacity:.35}
+
+    /* ══════════════════════════════════════════
+       LAYOUT
+    ══════════════════════════════════════════ */
+    .app{display:flex;height:100vh;overflow:hidden;position:relative;z-index:1}
+
+    /* ══════════════════════════════════════════
+       SIDEBAR
+    ══════════════════════════════════════════ */
+    .sidebar{
+      width:228px;flex-shrink:0;
+      background:rgba(0,0,0,.95);
+      border-right:1px solid var(--acc-border);
+      display:flex;flex-direction:column;position:relative;
+      transition:width .35s cubic-bezier(.4,0,.2,1);
+    }
+    .sidebar::after{content:'';position:absolute;top:0;right:0;width:1px;height:100%;
+      background:linear-gradient(180deg,transparent,var(--acc) 30%,var(--acc) 70%,transparent);opacity:.35}
+
+    /* hud corners on sidebar */
+    .hc{position:absolute;width:10px;height:10px}
+    .hc-tl{top:0;left:0;border-top:1px solid var(--acc);border-left:1px solid var(--acc)}
+    .hc-br{bottom:0;right:0;border-bottom:1px solid var(--acc);border-right:1px solid var(--acc)}
+
+    /* Logo */
+    .logo-wrap{padding:14px 14px 12px;border-bottom:1px solid var(--acc-border);position:relative}
+
+    /* Nav */
+    .nav-item{
+      display:flex;align-items:center;gap:10px;
+      padding:10px 14px;color:var(--text-dim);
+      font-size:12.5px;font-weight:700;
+      font-family:'Rajdhani',sans-serif;letter-spacing:.06em;text-transform:uppercase;
+      transition:all .2s;cursor:pointer;text-decoration:none;
+      border-left:2px solid transparent;position:relative;
+    }
+    .nav-item:hover{background:var(--acc-dim);color:var(--acc);border-left-color:var(--acc-border)}
+    .nav-item.active{background:var(--acc-dim);color:var(--acc);border-left-color:var(--acc)}
+    .nav-item.active::before{
+      content:'▶';position:absolute;right:12px;font-size:8px;
+      color:var(--acc);animation:blink .9s step-end infinite}
+    .nav-item{transition:all .18s cubic-bezier(.4,0,.2,1)}
+    .nav-item:hover{transform:translateX(4px)}
+    .nav-icon{font-size:13px;width:18px;text-align:center;flex-shrink:0}
+    .nav-sep{height:1px;background:var(--acc-border);margin:5px 14px;opacity:.5}
+
+    /* ══════════════════════════════════════════
+       MAIN
+    ══════════════════════════════════════════ */
+    .main-content{flex:1;overflow-y:auto;position:relative}
+    .main-content::-webkit-scrollbar{width:3px}
+    .main-content::-webkit-scrollbar-thumb{background:var(--acc-border)}
+    .page-wrap{padding:20px 24px;max-width:1360px}
+
+    /* ══════════════════════════════════════════
+       PAGE TRANSITION
+    ══════════════════════════════════════════ */
+    .penter{animation:pageIn .3s cubic-bezier(.4,0,.2,1) forwards}
+    @keyframes pageIn{from{opacity:0;transform:translateX(-12px) scale(.99)}to{opacity:1;transform:translateX(0) scale(1)}}
+    .pleave{animation:pageOut .2s ease forwards;pointer-events:none}
+    @keyframes pageOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(12px)}}
+
+    /* ══════════════════════════════════════════
+       COMPONENTS
+    ══════════════════════════════════════════ */
+
+    /* Cards */
+    .hud-card{
+      background:var(--bg2);border:1px solid var(--acc-border);
+      border-radius:3px;position:relative;transition:border-color .2s,box-shadow .2s;
+    }
+    .hud-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+      background:linear-gradient(90deg,transparent,var(--acc-bright),transparent);opacity:.5}
+    .hud-card:hover{border-color:var(--acc-bright);box-shadow:0 0 20px var(--acc-dim)}
+
+    /* Stat cards */
+    .scard{background:var(--bg2);border:1px solid var(--acc-border);border-radius:3px;
+      padding:18px;position:relative;overflow:hidden;transition:all .25s ease}
+    .scard:hover{transform:translateY(-2px);border-color:var(--acc-bright);
+      box-shadow:0 6px 24px var(--acc-dim)}
+    .scard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+      background:linear-gradient(90deg,transparent,var(--acc),transparent)}
+    .card-glow{position:absolute;bottom:-24px;right:-24px;width:80px;height:80px;
+      border-radius:50%;filter:blur(24px);pointer-events:none;opacity:.35;background:var(--acc)}
+
+    /* Buttons */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+      padding:8px 18px;border-radius:3px;font-size:12.5px;font-weight:700;
+      font-family:'Rajdhani',sans-serif;letter-spacing:.08em;text-transform:uppercase;
+      cursor:pointer;transition:all .18s;border:none;outline:none;text-decoration:none;
+      white-space:nowrap;position:relative;overflow:hidden}
+    .btn::after{content:'';position:absolute;inset:0;
+      background:linear-gradient(135deg,rgba(255,255,255,.07),transparent);pointer-events:none}
+    .btn-primary{background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 60%,#000),var(--acc));
+      color:#fff;box-shadow:0 2px 12px var(--acc-glow)}
+    .btn-primary:hover{box-shadow:0 4px 20px var(--acc-glow);transform:translateY(-1px);filter:brightness(1.1)}
+    .btn-ghost{background:var(--acc-dim);border:1px solid var(--acc-border);color:var(--acc)}
+    .btn-ghost:hover{background:rgba(var(--acc-rgb),.2);border-color:var(--acc-bright)}
+    .btn-danger{background:linear-gradient(135deg,rgba(127,29,29,.9),rgba(220,38,38,.9));color:#fff}
+    .btn-danger:hover{transform:translateY(-1px);filter:brightness(1.15)}
+    .btn-success{background:linear-gradient(135deg,rgba(20,83,45,.9),rgba(22,163,74,.9));color:#4ade80}
+    .btn-success:hover{transform:translateY(-1px)}
+    .btn-sm{padding:5px 12px!important;font-size:11px!important}
+    .btn-lg{padding:11px 28px!important;font-size:14px!important}
+
+    /* Badges */
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:2px;
+      font-size:10.5px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:.06em;text-transform:uppercase}
+    .badge-acc{background:var(--acc-dim);color:var(--acc);border:1px solid var(--acc-border)}
+    .badge-green{background:rgba(22,163,74,.1);color:#4ade80;border:1px solid rgba(22,163,74,.25)}
+    .badge-yellow{background:rgba(234,179,8,.1);color:#fbbf24;border:1px solid rgba(234,179,8,.25)}
+    .badge-orange{background:rgba(249,115,22,.1);color:#fb923c;border:1px solid rgba(249,115,22,.25)}
+    .badge-gray{background:rgba(255,255,255,.05);color:#555;border:1px solid rgba(255,255,255,.08)}
+
+    /* Inputs */
+    .input{background:rgba(0,0,0,.7);border:1px solid var(--acc-border);border-radius:3px;
+      padding:9px 12px;font-size:13px;color:#ddd;outline:none;transition:all .2s;width:100%;
+      font-family:'Inter',sans-serif}
+    .input::placeholder{color:#2a2a2a}
+    .input:focus{border-color:var(--acc-bright);box-shadow:0 0 0 2px var(--acc-dim)}
+
+    /* Progress */
+    .progress-track{background:rgba(255,255,255,.05);border-radius:1px;overflow:hidden;height:4px;
+      border:1px solid var(--acc-border)}
+    .progress-fill{height:100%;background:linear-gradient(90deg,color-mix(in srgb,var(--acc) 50%,#000),var(--acc));
+      transition:width .4s ease;position:relative}
+    .progress-fill::after{content:'';position:absolute;right:0;top:0;bottom:0;width:4px;
+      background:#fff;filter:blur(2px);opacity:.7}
+
+    /* Tables */
+    .tr{border-bottom:1px solid rgba(255,255,255,.04);transition:all .15s}
+    .tr:hover{background:var(--acc-dim)}
+
+    /* irow / ikey / ival */
+    .irow{display:flex;align-items:center;justify-content:space-between;
+      padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+    .irow:last-child{border-bottom:none}
+    .ikey{font-size:11.5px;color:var(--text-dim);font-family:'Rajdhani',sans-serif;
+      text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:6px}
+    .ival{font-size:13px;font-weight:600;color:var(--text)}
+
+    /* srow / savatar */
+    .srow{display:flex;align-items:center;gap:11px;padding:10px 16px;
+      border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s}
+    .srow:hover{background:var(--acc-dim)}
+    .savatar{width:34px;height:34px;flex-shrink:0;background:var(--acc-dim);
+      border:1px solid var(--acc-border);border-radius:2px;
+      display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden}
+
+    /* Avatar .ava */
+    .ava{width:34px;height:34px;flex-shrink:0;background:var(--acc-dim);
+      border:1px solid var(--acc-border);display:flex;align-items:center;justify-content:center;
+      font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--acc);
+      overflow:hidden;position:relative;
+      clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,0 100%)}
+    .ava img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2}
+    .ava-letter{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:1}
+
+    /* Profile banner */
+    .pbanner{height:70px;position:relative;overflow:hidden;
+      background:linear-gradient(135deg,#030000,#0d0000,#030000)}
+    .pbanner::after{content:'';position:absolute;inset:0;
+      background:repeating-linear-gradient(90deg,transparent,transparent 20px,var(--acc-dim) 20px,var(--acc-dim) 21px)}
+
+    /* Toggle */
+    .tw{position:relative;width:44px;height:22px;cursor:pointer;flex-shrink:0}
+    .tw input{opacity:0;width:0;height:0;position:absolute}
+    .ttrack{position:absolute;inset:0;background:rgba(0,0,0,.5);border:1px solid var(--acc-border);transition:.2s;border-radius:2px}
+    .ttrack::before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;
+      background:var(--text-dim);transition:.2s}
+    .tw input:checked~.ttrack{border-color:var(--acc);background:var(--acc-dim)}
+    .tw input:checked~.ttrack::before{transform:translateX(22px);background:var(--acc);box-shadow:0 0 6px var(--acc-glow)}
+
+    /* Section label */
+    .sec-label{font-family:'Share Tech Mono',monospace;font-size:9.5px;color:var(--text-dim);
+      letter-spacing:.15em;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+    .sec-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--acc-border),transparent)}
+
+    /* Animations */
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+    @keyframes pulse-acc{0%,100%{box-shadow:0 0 6px var(--acc-glow)}50%{box-shadow:0 0 16px var(--acc-glow),0 0 30px var(--acc-dim)}}
+    @keyframes flicker{0%,100%{opacity:1}91%{opacity:1}92%{opacity:.7}93%{opacity:1}97%{opacity:.85}98%{opacity:1}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes loaderSweep{0%{left:-100%}100%{left:100%}}
+    @keyframes popIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+
+    /* Toasts */
+    #tc{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column-reverse;gap:6px;pointer-events:none}
+    .toast{pointer-events:all;padding:10px 16px;border-radius:3px;
+      font-size:12.5px;font-weight:600;font-family:'Rajdhani',sans-serif;letter-spacing:.05em;
+      display:flex;align-items:center;gap:8px;max-width:300px;
+      animation:tIn .22s cubic-bezier(.4,0,.2,1) forwards;border-left:3px solid}
+    @keyframes tIn{from{opacity:0;transform:translateX(20px) scale(.95)}to{opacity:1;transform:translateX(0) scale(1)}}
+    .tok{background:rgba(0,12,4,.97);border-color:#16a34a;color:#4ade80}
+    .terr{background:rgba(12,0,0,.97);border-color:#dc2626;color:#f87171}
+    .twarn{background:rgba(12,8,0,.97);border-color:#f97316;color:#fb923c}
+    .tinfo{background:rgba(4,4,10,.97);border-color:var(--acc);color:var(--acc)}
+
+    /* Event notification (big) */
+    .event-notif{
+      position:fixed;top:16px;right:16px;z-index:9998;
+      background:var(--bg2);border:1px solid var(--acc-border);
+      border-radius:3px;padding:12px 16px;max-width:300px;
+      animation:notifIn .3s cubic-bezier(.4,0,.2,1) forwards;
+      box-shadow:0 4px 24px rgba(0,0,0,.8),0 0 0 1px var(--acc-dim);
+    }
+    @keyframes notifIn{from{opacity:0;transform:translateX(20px) translateY(-8px)}to{opacity:1;transform:translateX(0) translateY(0)}}
+
+    /* Theme picker */
+    .theme-btn{width:16px;height:16px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .2s;flex-shrink:0}
+    .theme-btn:hover,.theme-btn.active{border-color:#fff;transform:scale(1.2)}
+
+    /* Qlink */
+    .qlink{display:flex;align-items:center;gap:8px;padding:8px 10px;
+      font-family:'Share Tech Mono',monospace;font-size:10.5px;letter-spacing:.05em;
+      color:var(--text-dim);text-decoration:none;border:1px solid transparent;transition:all .15s;border-radius:2px}
+    .qlink:hover{color:var(--acc);border-color:var(--acc-border);background:var(--acc-dim)}
+
+    /* Scrollbar */
+    ::-webkit-scrollbar{width:3px;height:3px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:var(--acc-border)}
+
+    /* ── Page title ── */
+    .page-title{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:var(--acc);
+      text-shadow:0 0 18px var(--acc-glow);letter-spacing:.15em;text-transform:uppercase;
+      display:flex;align-items:center;gap:10px}
+    .page-title::before{content:'//';color:var(--text-dim);font-size:12px;font-family:'Share Tech Mono',monospace}
+    .glitch:hover{animation:glitch .3s ease}
+    @keyframes glitch{
+      0%,100%{text-shadow:0 0 18px var(--acc-glow)}
+      20%{text-shadow:-2px 0 #0ff,2px 0 var(--acc)}
+      40%{text-shadow:2px 0 #0ff,-2px 0 var(--acc)}
+      60%{text-shadow:0 0 18px var(--acc-glow)}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ LOADING SCREEN ══ -->
+<div id="loader" style="position:fixed;inset:0;background:#000;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .4s">
+  <div style="font-family:'Orbitron',monospace;font-size:24px;font-weight:900;color:var(--acc);text-shadow:0 0 30px var(--acc-glow);letter-spacing:.25em;margin-bottom:8px;animation:flicker 2s infinite">SLAVES.SU</div>
+  <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.2em;margin-bottom:32px">CONTROL PANEL v2.1</div>
+  <div style="width:200px;height:2px;background:rgba(255,255,255,.06);position:relative;overflow:hidden">
+    <div id="loader-bar" style="position:absolute;left:-100%;top:0;bottom:0;width:100%;background:linear-gradient(90deg,transparent,var(--acc),transparent);animation:loaderSweep 1s ease-in-out infinite"></div>
+  </div>
+  <div id="loader-msg" style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-dim);letter-spacing:.15em;margin-top:14px">ИНИЦИАЛИЗАЦИЯ...</div>
+</div>
+
+<!-- ══ TOP PROGRESS BAR ══ -->
+<div id="nprogress" style="position:fixed;top:0;left:0;right:0;height:2px;z-index:9998;pointer-events:none">
+  <div id="nprogress-bar" style="height:100%;background:linear-gradient(90deg,var(--acc),rgba(255,255,255,.8));box-shadow:0 0 8px var(--acc-glow);width:0%;transition:width .2s ease;opacity:0"></div>
+</div>
+
+<div class="bg-hud"></div>
+<div class="bg-grid"></div>
+<div class="scan-beam"></div>
+
+<div class="app">
+
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <aside class="sidebar">
+    <div class="hc hc-tl"></div>
+    <div class="hc hc-br"></div>
+
+    <!-- Logo -->
+    <div class="logo-wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:34px;border:1px solid var(--acc-bright);background:var(--acc-dim);
+          display:flex;align-items:center;justify-content:center;font-size:16px;position:relative;
+          animation:pulse-acc 2.5s ease-in-out infinite;border-radius:2px">
+          ⛓
+          <div style="position:absolute;top:-1px;left:-1px;width:7px;height:7px;border-top:1px solid var(--acc);border-left:1px solid var(--acc)"></div>
+          <div style="position:absolute;bottom:-1px;right:-1px;width:7px;height:7px;border-bottom:1px solid var(--acc);border-right:1px solid var(--acc)"></div>
+        </div>
+        <div>
+          <div style="font-family:'Orbitron',monospace;font-weight:900;font-size:12.5px;
+            color:var(--acc);animation:flicker 5s infinite;letter-spacing:.12em">SLAVES</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:8.5px;color:var(--text-dim);letter-spacing:.14em">CONTROL PANEL</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div style="padding:5px 14px;border-bottom:1px solid var(--acc-border);background:var(--acc-dim);
+      display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="width:5px;height:5px;border-radius:50%;background:var(--acc);
+          animation:blink 1.4s ease-in-out infinite;box-shadow:0 0 5px var(--acc);flex-shrink:0"></span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--acc);letter-spacing:.1em">ONLINE</span>
+      </div>
+      <span id="clock" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.08em"></span>
+    </div>
+
+    <!-- Nav -->
+    <nav style="flex:1;padding:6px 0;display:flex;flex-direction:column;overflow-y:auto">
+      <a href="/dashboard" class="nav-item {% if request.url.path == '/dashboard' %}active{% endif %}">
+        <span class="nav-icon">◈</span> ДАШБОРД
+      </a>
+      <a href="/slaves" class="nav-item {% if request.url.path == '/slaves' %}active{% endif %}">
+        <span class="nav-icon">⛓</span> МОИ РАБЫ
+      </a>
+      <a href="/search" class="nav-item {% if request.url.path == '/search' %}active{% endif %}">
+        <span class="nav-icon">◎</span> ДОСЬЕ
+      </a>
+      <a href="/top" class="nav-item {% if request.url.path == '/top' %}active{% endif %}">
+        <span class="nav-icon">◆</span> ТОП
+      </a>
+      <a href="/scanner" class="nav-item {% if request.url.path == '/scanner' %}active{% endif %}">
+        <span class="nav-icon">▶</span> СКАНЕР
+      </a>
+      <div class="nav-sep"></div>
+      <a href="/profile" class="nav-item {% if request.url.path == '/profile' %}active{% endif %}">
+        <span class="nav-icon">◉</span> ПРОФИЛЬ
+      </a>
+      <a href="/history" class="nav-item {% if request.url.path == '/history' %}active{% endif %}">
+        <span class="nav-icon">◎</span> ИСТОРИЯ
+      </a>
+      <a href="/settings" class="nav-item {% if request.url.path == '/settings' %}active{% endif %}">
+        <span class="nav-icon">◐</span> НАСТРОЙКИ
+      </a>
+      {% if sess is defined and sess and sess.get('panel_role') == 'admin' %}
+      <a href="/admin" class="nav-item {% if request.url.path == '/admin' %}active{% endif %}" style="color:var(--acc)">
+        <span class="nav-icon">⚑</span> ADMIN
+      </a>
+      <a href="/audit" class="nav-item {% if request.url.path == '/audit' %}active{% endif %}" style="color:var(--yellow)">
+        <span class="nav-icon">◈</span> AUDIT LOG
+      </a>
+      {% endif %}
+    </nav>
+
+    <!-- Theme picker -->
+    <div style="padding:8px 14px;border-top:1px solid var(--acc-border)">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:8.5px;color:var(--text-dim);letter-spacing:.12em;margin-bottom:7px">// ТЕМА</div>
+      <div style="display:flex;gap:7px;align-items:center" id="theme-btns">
+        <div class="theme-btn" data-theme="red"    style="background:#dc2626" title="Red"    onclick="setTheme('red')"></div>
+        <div class="theme-btn" data-theme="cyan"   style="background:#0ea5e9" title="Cyan"   onclick="setTheme('cyan')"></div>
+        <div class="theme-btn" data-theme="green"  style="background:#16a34a" title="Green"  onclick="setTheme('green')"></div>
+        <div class="theme-btn" data-theme="purple" style="background:#9333ea" title="Purple" onclick="setTheme('purple')"></div>
+        <div class="theme-btn" data-theme="orange" style="background:#ea580c" title="Orange" onclick="setTheme('orange')"></div>
+        <div class="theme-btn" data-theme="gold"   style="background:#d97706" title="Gold"   onclick="setTheme('gold')"></div>
+      </div>
+    </div>
+
+    <!-- User -->
+    <div style="padding:10px 14px 12px;border-top:1px solid var(--acc-border);position:relative">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+        <div style="width:30px;height:30px;border:1px solid var(--acc-bright);background:var(--acc-dim);
+          display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+          color:var(--acc);flex-shrink:0;font-family:'Orbitron',monospace;border-radius:2px">
+          {{ (sess.get('vk_first','?') if sess is defined and sess else '?') | first | upper }}
+        </div>
+        <div style="min-width:0;flex:1">
+          <div style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:var(--text);
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.03em">
+            {{ (sess.get('vk_first','') if sess is defined and sess else '') }} {{ (sess.get('vk_last','') if sess is defined and sess else '') }}
+          </div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim)">{% if sess is defined and sess %}ID:{{ sess.get('vk_user_id','') }}{% else %}NOT LOGGED IN{% endif %}</div>
+        </div>
+      </div>
+      <a href="/logout" style="font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;
+        text-transform:uppercase;color:var(--text-dim);display:flex;align-items:center;gap:5px;text-decoration:none;transition:color .2s"
+        onmouseover="this.style.color='var(--acc)'" onmouseout="this.style.color='var(--text-dim)'">⏻ ВЫЙТИ</a>
+    </div>
+
+    <!-- Live ticker -->
+    <div style="padding:7px 14px;border-top:1px solid var(--acc-border);background:rgba(0,0,0,.4)">
+      <div id="live-ticker" style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-dim);letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+        <span style="color:var(--acc);animation:blink 1s step-end infinite">■</span> СИСТЕМА АКТИВНА
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <main class="main-content">
+    <div class="page-wrap penter">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+</div>
+
+<div id="tc"></div>
+
+<script>
+/* ── Utils ── */
+function fmtNum(n){if(n===null||n===undefined)return'—';return parseInt(n).toLocaleString('ru-RU')}
+function colorCost(c){return c>=1000000?'#f87171':c>=100000?'#fb923c':c>=10000?'#fbbf24':'#555'}
+
+/* ── Toast ── */
+function showToast(msg,type='info'){
+  const c=document.getElementById('tc');
+  const icons={ok:'[✓]',err:'[✗]',warn:'[!]',info:'[→]'};
+  const cls={ok:'tok',err:'terr',warn:'twarn',info:'tinfo'};
+  const d=document.createElement('div');
+  d.className='toast '+(cls[type]||'tinfo');
+  d.innerHTML=`<span style="font-family:'Share Tech Mono',monospace;font-size:10px;flex-shrink:0">${icons[type]||'[→]'}</span><span>${msg}</span>`;
+  c.appendChild(d);
+  setTimeout(()=>{d.style.transition='all .25s';d.style.opacity='0';d.style.transform='translateX(16px)';setTimeout(()=>d.remove(),250)},3800);
+}
+
+/* ── apiFetch ── */
+async function apiFetch(url,method='POST',body=null){
+  const o={method,headers:{'Content-Type':'application/json'}};
+  if(body)o.body=JSON.stringify(body);
+  try{const r=await fetch(url,o);return await r.json();}catch(e){return{error:e.message};}
+}
+
+/* ── Page transitions ── */
+// ── Loading screen ──
+(function(){
+  const loader  = document.getElementById('loader');
+  const bar     = document.getElementById('loader-bar');
+  const msg     = document.getElementById('loader-msg');
+  const msgs    = ['ЗАГРУЗКА МОДУЛЕЙ...','УСТАНОВКА СОЕДИНЕНИЯ...','АВТОРИЗАЦИЯ...','ГОТОВО'];
+  let pct = 0;
+  // Stutter at certain points to feel realistic
+  const stops = [22, 45, 68, 85];
+  let stutter = 0;
+  const interval = setInterval(()=>{
+    const near = stops.find(s => pct < s && s - pct < 8);
+    const inc = near ? Math.random() * 1.5 : Math.random() * 6 + 2;
+    pct = Math.min(pct + inc, 97); // never reach 100 on its own
+    bar.style.width = pct + '%';
+    msg.textContent = pct < 25 ? msgs[0] : pct < 55 ? msgs[1] : pct < 80 ? msgs[2] : msgs[3];
+  }, 120);
+  // Finish on actual page load
+  window.addEventListener('load', ()=>{
+    clearInterval(interval);
+    pct = 100;
+    bar.style.width = '100%';
+    bar.style.transition = 'width .3s ease';
+    msg.textContent = msgs[3];
+    setTimeout(()=>{
+      loader.style.opacity = '0';
+      loader.style.transition = 'opacity .5s';
+      setTimeout(()=>loader.style.display='none', 500);
+    }, 400);
+  });
+})();
+
+document.querySelectorAll('a.nav-item, a.btn').forEach(link=>{
+  link.addEventListener('click',e=>{
+    const href=link.getAttribute('href');
+    if(!href||href.startsWith('#')||href===window.location.pathname||href.startsWith('http'))return;
+    e.preventDefault();
+    npStart();
+    const wrap=document.querySelector('.page-wrap');
+    if(wrap){
+      wrap.classList.remove('penter');
+      wrap.classList.add('pleave');
+      setTimeout(()=>window.location.href=href,160);
+    } else {
+      window.location.href=href;
+    }
+  });
+});
+
+/* ── Clock ── */
+function updateClock(){
+  const now=new Date();
+  const h=String(now.getHours()).padStart(2,'0');
+  const m=String(now.getMinutes()).padStart(2,'0');
+  const s=String(now.getSeconds()).padStart(2,'0');
+  const el=document.getElementById('clock');
+  if(el)el.textContent=h+':'+m+':'+s;
+}
+setInterval(updateClock,1000);updateClock();
+
+// Live ticker messages
+const tickerMsgs = [
+  '■ СИСТЕМА АКТИВНА',
+  '▲ МОНИТОРИНГ РЫНКА',
+  '◉ СОЕДИНЕНИЕ УСТАНОВЛЕНО',
+  '⬡ SLAVES.SU API v1',
+  '◈ ШИФРОВАНИЕ ВКЛЮЧЕНО',
+  '▶ ГОТОВ К РАБОТЕ',
+];
+let tickerIdx = 0;
+setInterval(()=>{
+  const el = document.getElementById('live-ticker');
+  if(!el) return;
+  tickerIdx = (tickerIdx + 1) % tickerMsgs.length;
+  el.style.opacity = '0';
+  el.style.transition = 'opacity .3s';
+  setTimeout(()=>{
+    el.innerHTML = '<span style="color:var(--acc);animation:blink 1s step-end infinite">■</span> ' + tickerMsgs[tickerIdx].replace('■ ','');
+    el.style.opacity = '1';
+  }, 300);
+}, 4000);
+
+// Animate numbers on page load — find all .scard-value and count up
+function animateNumbers(){
+  document.querySelectorAll('.scard-value, [data-animate-num]').forEach(el=>{
+    const raw = el.textContent.replace(/[^0-9]/g,'');
+    if(!raw || raw.length < 2) return;
+    const target = parseInt(raw);
+    if(isNaN(target) || target === 0) return;
+    const orig = el.textContent;
+    const suffix = orig.replace(/[0-9 ]/g,'');
+    let cur = 0; const step = Math.ceil(target / 20);
+    const t = setInterval(()=>{
+      cur = Math.min(cur + step, target);
+      el.textContent = cur.toLocaleString('ru-RU') + (suffix || '');
+      if(cur >= target){ el.textContent = orig; clearInterval(t); }
+    }, 40);
+  });
+}
+setTimeout(animateNumbers, 800);
+
+/* ── Loader ── */
+const _loaderMsgs = [
+  "ЗАГРУЗКА ДАННЫХ...", "ПРОВЕРКА ТОКЕНА...", "СИНХРОНИЗАЦИЯ...",
+  "ИНИЦИАЛИЗАЦИЯ СЕССИИ...", "ПОДКЛЮЧЕНИЕ К API...", "ГОТОВО."
+];
+let _loaderIdx = 0;
+const _loaderInterval = setInterval(() => {
+  _loaderIdx = Math.min(_loaderIdx + 1, _loaderMsgs.length - 1);
+  const el = document.getElementById("loader-msg");
+  if(el) el.textContent = _loaderMsgs[_loaderIdx];
+}, 200);
+window.addEventListener("load", () => {
+  clearInterval(_loaderInterval);
+  const el = document.getElementById("loader-msg");
+  if(el) el.textContent = "ГОТОВО.";
+  setTimeout(() => {
+    const loader = document.getElementById("loader");
+    if(loader) { loader.style.opacity = "0"; setTimeout(() => loader.remove(), 400); }
+  }, 300);
+});
+
+/* ── Top progress bar (NProgress-like) ── */
+function npStart() {
+  const b = document.getElementById("nprogress-bar");
+  if(!b) return;
+  b.style.opacity = "1"; b.style.width = "0%";
+  b.style.transition = "width 8s cubic-bezier(.1,0,.3,1)";
+  requestAnimationFrame(() => { b.style.width = "85%"; });
+}
+function npDone() {
+  const b = document.getElementById("nprogress-bar");
+  if(!b) return;
+  b.style.transition = "width .2s ease";
+  b.style.width = "100%";
+  setTimeout(() => { b.style.opacity = "0"; b.style.width = "0%"; }, 300);
+}
+npStart();
+window.addEventListener("load", npDone);
+
+/* ── Theme ── */
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  localStorage.setItem('slv_theme',t);
+  document.querySelectorAll('.theme-btn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.theme===t);
+  });
+}
+(function initTheme(){
+  const saved=localStorage.getItem('slv_theme')||'red';
+  document.documentElement.setAttribute('data-theme',saved);
+  document.addEventListener('DOMContentLoaded',()=>{
+    document.querySelectorAll('.theme-btn').forEach(b=>{
+      b.classList.toggle('active',b.dataset.theme===saved);
+    });
+  });
+})();
+
+/* ── Real-time event notifications ── */
+let _lastLogCount=0;
+let _notifQueue=[];
+let _notifShowing=false;
+
+function showEventNotif(msg,type='info'){
+  const icons={ok:'✓ КУПЛЕНО',err:'✗ ОШИБКА',warn:'! ВНИМАНИЕ',info:'→ СОБЫТИЕ'};
+  const cols={ok:'#4ade80',err:'#f87171',warn:'#fb923c',info:'var(--acc)'};
+  const el=document.createElement('div');
+  el.className='event-notif';
+  el.style.borderColor=`${cols[type]||cols.info}`;
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+      <span style="font-family:'Rajdhani',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.12em;color:${cols[type]||cols.info}">${icons[type]||icons.info}</span>
+      <span style="font-size:11px;cursor:pointer;color:var(--text-dim)" onclick="this.closest('.event-notif').remove()">✕</span>
+    </div>
+    <div style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;color:var(--text);line-height:1.3">${msg}</div>`;
+  document.body.appendChild(el);
+  setTimeout(()=>{el.style.transition='all .3s';el.style.opacity='0';el.style.transform='translateX(20px)';setTimeout(()=>el.remove(),300)},4500);
+}
+
+async function pollLogs(){
+  try{
+    const logs=await apiFetch('/api/logs','GET');
+    if(!Array.isArray(logs))return;
+    if(_lastLogCount===0){_lastLogCount=logs.length;return;}
+    const newLogs=logs.slice(_lastLogCount);
+    _lastLogCount=logs.length;
+    newLogs.forEach(e=>{
+      const type=e.level||'info';
+      // Show as toast for all, big notif only for important events
+      showToast(e.msg,type);
+      if(type==='ok'||type==='err'){
+        showEventNotif(e.msg,type);
+      }
+    });
+  }catch(e){}
+}
+setInterval(pollLogs,4000);
+setTimeout(()=>{apiFetch('/api/logs','GET').then(r=>{if(Array.isArray(r))_lastLogCount=r.length;});},500);
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

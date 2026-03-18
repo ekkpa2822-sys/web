@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Вход — Slaves Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#07070f;--bgc:#0d0d1a;--bge:#131325;--bdr:rgba(120,80,255,.15);--pu:#7c3aed;--pul:#a78bfa;--go:#f59e0b;--gol:#fbbf24;--re:#ef4444;--rel:#f87171;--gr:#10b981;--grl:#34d399;--tx:#f1f0ff;--tx2:#9b95c4;--tx3:#4a4570;--ffd:'Bebas Neue',cursive;--ff:'Nunito',sans-serif;--tr:.2s cubic-bezier(.4,0,.2,1)}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--tx);font-family:var(--ff);min-height:100vh}
+    body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(124,58,237,.15),transparent 60%),radial-gradient(ellipse 60% 40% at 80% 110%,rgba(245,158,11,.08),transparent 60%);pointer-events:none}
+  </style>
+</head>
+<body>{% block content %}{% endblock %}</body>
+</html>

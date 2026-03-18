@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+{% block title %}DASHBOARD — SLAVES{% endblock %}
+{% block content %}
+
+{% if profile %}
+
+<!-- ═══ TOP ACTION BAR ═══ -->
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:22px;
+  background:var(--bg2);border:1px solid var(--acc-border);padding:10px 16px;border-radius:3px;
+  position:sticky;top:0;z-index:10;backdrop-filter:blur(10px)">
+  <div style="font-family:'Share Tech Mono',monospace;font-size:8.5px;color:var(--text-dim);letter-spacing:.15em;margin-right:6px">CMD:</div>
+  <button onclick="doRevenue()" class="btn btn-primary btn-sm">⬡ COLLECT</button>
+  <button onclick="doBonus()"   class="btn btn-ghost btn-sm">◈ BONUS</button>
+  <button onclick="toggleAuto()" id="auto-btn"
+    class="btn btn-sm {% if auto_on %}btn-primary{% else %}btn-ghost{% endif %}">
+    <span id="auto-ico">{% if auto_on %}◉{% else %}◎{% endif %}</span>
+    <span id="auto-lbl">{% if auto_on %}AUTO ON{% else %}AUTO OFF{% endif %}</span>
+  </button>
+  <div style="flex:1"></div>
+  <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.08em">
+    OP: <span style="color:var(--acc)">{{ sess.vk_first|upper }}</span>
+    &nbsp;·&nbsp; UPTIME: <span style="color:var(--acc)">{{ uptime }}</span>
+    &nbsp;·&nbsp; <span style="color:#4ade80">■ ACTIVE</span>
+  </span>
+</div>
+
+<!-- ═══ HERO ROW: 4 stat cards ═══ -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+
+  {% for ico, label, val, col, sub in [
+    ('⬡','БАЛАНС',       fmt(profile.balance),        '#fbbf24', 'МОНЕТ В КАЗНЕ'),
+    ('▲','ДОХОД / ЧАС',  fmt(profile.income),          '#22d3ee', 'МОНЕТ В ЧАС'),
+    ('⛓','РАБОВ',        profile.slaves_count,          'var(--acc)', 'В РАБСТВЕ'),
+    ('◈','ЦЕНА РАБА',    fmt(profile.cost),             '#ddd',    'СТОИМОСТЬ'),
+  ] %}
+  <div class="scard" style="animation:popIn .3s cubic-bezier(.4,0,.2,1) {{ loop.index0 * 0.07 }}s backwards">
+    <div class="card-glow" style="background:{{ col }}"></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.14em;text-transform:uppercase">{{ label }}</div>
+      <span style="font-size:15px;opacity:.5">{{ ico }}</span>
+    </div>
+    <div style="font-family:'Orbitron',monospace;font-size:24px;font-weight:900;color:{{ col }};
+      line-height:1;text-shadow:0 0 16px {{ col }}44">{{ val }}</div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:8px;letter-spacing:.1em">{{ sub }}</div>
+    <div style="position:absolute;bottom:0;left:0;right:0;height:1px;
+      background:linear-gradient(90deg,transparent,{{ col }},transparent);opacity:.4"></div>
+  </div>
+  {% endfor %}
+
+</div>
+
+<!-- ═══ INFO STRIP ═══ -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px">
+  {% for ico, label, val, ok in [
+    ('◉', 'ЩИТ',    fmt_date(profile.shield)  if profile.shield   else 'NO SHIELD',    profile.shield is not none),
+    ('⛓', 'ОКОВЫ',  fmt_date(profile.fetters) if profile.fetters  else 'FREE',          profile.fetters is not none),
+    ('▣', 'КЛАН',   profile.group.name         if profile.group    else 'SOLO',          profile.group is not none),
+    ('◐', 'РАБОТА', profile.job                if profile.job      else 'IDLE',          profile.job is not none),
+  ] %}
+  <div style="background:var(--bg2);border:1px solid var(--acc-border);padding:8px 12px;
+    border-radius:3px;transition:border-color .2s;cursor:default;animation:fadeInUp .4s ease {{ 0.05 + loop.index0 * 0.06 }}s backwards"
+    onmouseover="this.style.borderColor='var(--acc-bright)'"
+    onmouseout="this.style.borderColor='var(--acc-border)'">
+    <div style="font-family:'Share Tech Mono',monospace;font-size:8.5px;color:var(--text-dim);letter-spacing:.12em;margin-bottom:3px;display:flex;align-items:center;gap:4px">
+      <span>{{ ico }}</span>{{ label }}
+    </div>
+    <div style="font-family:'Rajdhani',sans-serif;font-size:12.5px;font-weight:700;letter-spacing:.04em;
+      color:{% if ok %}var(--acc){% else %}var(--text-dim){% endif %};
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ val }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ═══ MAIN 3-COLUMN GRID ═══ -->
+<div style="display:grid;grid-template-columns:170px 1fr 220px;gap:14px;align-items:start">
+
+  <!-- COL 1: ACTION COMMANDS -->
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <div class="sec-label">// КОМАНДЫ</div>
+
+    {% for onclick, ico, label, sub, cls in [
+      ("doRevenue()", "⬡", "COLLECT", "СОБРАТЬ МОНЕТЫ", "btn-primary"),
+      ("doBonus()",   "◈", "BONUS",   "ЕЖЕДН. БОНУС",   "btn-ghost"),
+      ("toggleAuto()","◉", "AUTO",    cfg.revenue_interval~"s INTERVAL", "btn-ghost"),
+    ] %}
+    <button onclick="{{ onclick }}" {% if onclick == "toggleAuto()" %}id="auto-big"{% endif %}
+      class="btn {{ cls }}" style="width:100%;justify-content:flex-start;gap:10px;padding:11px 13px">
+      <span style="font-size:17px;flex-shrink:0">{{ ico }}</span>
+      <div style="text-align:left;min-width:0">
+        <div style="font-size:11.5px">{{ label }}</div>
+        <div style="font-size:9px;opacity:.55;font-family:'Share Tech Mono',monospace;letter-spacing:.05em;margin-top:1px">{{ sub }}</div>
+      </div>
+    </button>
+    {% endfor %}
+
+    <div style="margin-top:4px">
+      <a href="/scanner" class="qlink" style="margin-bottom:3px">▶ SCANNER</a>
+      <a href="/slaves"  class="qlink" style="margin-bottom:3px">⛓ МОИ РАБЫ
+        <span style="margin-left:auto;font-family:'Orbitron',monospace;font-size:10px;color:var(--acc)">{{ profile.slaves_count }}</span>
+      </a>
+      <a href="/top"    class="qlink" style="margin-bottom:3px">◆ ТОП</a>
+      <a href="/search" class="qlink">◎ ДОСЬЕ</a>
+    </div>
+  </div>
+
+  <!-- COL 2: EVENT LOG -->
+  <div class="hud-card" style="display:flex;flex-direction:column">
+    <div style="padding:10px 14px;border-bottom:1px solid var(--acc-border);
+      display:flex;align-items:center;justify-content:space-between">
+      <div class="sec-label" style="margin-bottom:0">// СИСТЕМНЫЙ ЛОГ</div>
+      <div style="display:flex;gap:10px">
+        <button onclick="clearLog()" style="font-family:'Share Tech Mono',monospace;font-size:9px;
+          color:var(--text-dim);background:none;border:none;cursor:pointer;letter-spacing:.1em;transition:color .15s"
+          onmouseover="this.style.color='var(--acc)'" onmouseout="this.style.color='var(--text-dim)'">CLR</button>
+        <button onclick="refreshLogs()" style="font-family:'Share Tech Mono',monospace;font-size:9px;
+          color:var(--text-dim);background:none;border:none;cursor:pointer;letter-spacing:.1em;transition:color .15s"
+          onmouseover="this.style.color='#4ade80'" onmouseout="this.style.color='var(--text-dim)'">REF</button>
+      </div>
+    </div>
+
+    <div id="log-container" style="padding:10px 14px;min-height:280px;max-height:400px;
+      overflow-y:auto;font-family:'Share Tech Mono',monospace;font-size:10.5px;
+      display:flex;flex-direction:column;gap:2px">
+      {% for e in logs %}
+      {% set lc = {'ok':'#4ade80','err':'#f87171','warn':'#fb923c','info':'#555'} %}
+      {% set lp = {'ok':'[✓]','err':'[✗]','warn':'[!]','info':'[→]'} %}
+      <div style="display:flex;gap:7px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03);
+        animation:fadeInUp .2s ease backwards">
+        <span style="color:#2a2a2a;font-size:9px;white-space:nowrap;flex-shrink:0;padding-top:1px">{{ e.ts }}</span>
+        <span style="color:{{ lc.get(e.level,'#555') }};flex-shrink:0">{{ lp.get(e.level,'[→]') }}</span>
+        <span style="color:{{ lc.get(e.level,'#555') }}">{{ e.msg }}</span>
+      </div>
+      {% else %}
+      <div style="color:var(--text-dim);text-align:center;padding:50px 0;letter-spacing:.14em;font-size:10px">NO EVENTS</div>
+      {% endfor %}
+    </div>
+
+    <!-- bottom nav shortcuts -->
+    <div style="padding:10px 14px;border-top:1px solid var(--acc-border);
+      display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+      {% for href, ico, label, col in [
+        ('/slaves','⛓','РАБЫ','var(--acc)'),
+        ('/scanner','▶','СКАН','#fbbf24'),
+        ('/top','◆','ТОП','#22d3ee'),
+        ('/search','◎','ДОСЬЕ','#4ade80'),
+      ] %}
+      <a href="{{ href }}" style="background:var(--bg3);border:1px solid var(--acc-border);
+        padding:8px 6px;text-decoration:none;text-align:center;border-radius:2px;
+        transition:all .18s" onmouseover="this.style.borderColor='{{ col }}';this.style.background='var(--acc-dim)'"
+        onmouseout="this.style.borderColor='var(--acc-border)';this.style.background='var(--bg3)'">
+        <div style="font-size:14px;color:{{ col }};margin-bottom:2px">{{ ico }}</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:9.5px;font-weight:700;
+          color:var(--text-dim);letter-spacing:.08em">{{ label }}</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- COL 3: STATS + AUTO -->
+  <div style="display:flex;flex-direction:column;gap:10px">
+
+    <!-- session stats -->
+    <div class="hud-card" style="padding:14px">
+      <div class="sec-label">// SESSION</div>
+      {% for ico, label, val, col in [
+        ('◈','КУПЛЕНО',  stats.bought_count,                 'var(--acc)'),
+        ('⬡','ПОТРАЧЕНО',fmt(stats.bought_total)~' 🪙',      '#fbbf24'),
+        ('▲','СОБРАНО',  fmt(stats.revenue_collected)~' 🪙', '#4ade80'),
+        ('◉','БОНУСОВ',  stats.bonus_collected,               '#22d3ee'),
+        ('✕','ОШИБОК',   stats.errors,                        '#f87171' if stats.errors else 'var(--text-dim)'),
+      ] %}
+      <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:9.5px;color:var(--text-dim);display:flex;align-items:center;gap:5px">
+          <span style="opacity:.4">{{ ico }}</span>{{ label }}
+        </span>
+        <span style="font-family:'Orbitron',monospace;font-size:12.5px;font-weight:700;color:{{ col }}">{{ val }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- daily bonus -->
+    {% if profile.daily_bonus %}
+    <div class="hud-card" style="padding:14px">
+      <div class="sec-label">// БОНУС</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <div style="font-family:'Orbitron',monospace;font-size:16px;font-weight:700;
+            color:{% if profile.daily_bonus.can_collect %}#4ade80{% else %}var(--text-dim){% endif %}">
+            DAY {{ profile.daily_bonus.collecting_days }}
+          </div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px;letter-spacing:.1em">
+            {% if profile.daily_bonus.can_collect %}READY TO CLAIM{% else %}CLAIMED TODAY{% endif %}
+          </div>
+        </div>
+        {% if profile.daily_bonus.can_collect %}
+        <button onclick="doBonus()" class="btn btn-success btn-sm">CLAIM</button>
+        {% else %}
+        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.08em">✓ DONE</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- auto-collect -->
+    <div class="hud-card" style="padding:14px;border-color:{% if auto_on %}var(--acc-bright){% else %}var(--acc-border){% endif %}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="sec-label" style="margin-bottom:0">// AUTO COLLECT</div>
+        <span id="auto-status-badge"
+          style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:.1em;
+          color:{% if auto_on %}#4ade80{% else %}var(--text-dim){% endif %}">
+          {% if auto_on %}● ACTIVE{% else %}○ IDLE{% endif %}
+        </span>
+      </div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-bottom:10px;line-height:1.7">
+        INT: <span style="color:var(--text)">{{ cfg.revenue_interval }}s</span> &nbsp;·&nbsp;
+        BONUS: <span style="color:{% if cfg.auto_bonus %}#4ade80{% else %}var(--text-dim){% endif %}">
+          {% if cfg.auto_bonus %}ON{% else %}OFF{% endif %}</span>
+      </div>
+      <button onclick="toggleAuto()" id="auto-toggle-btn"
+        class="btn {% if auto_on %}btn-danger{% else %}btn-success{% endif %} btn-sm" style="width:100%">
+        {% if auto_on %}⏹ STOP{% else %}▶ START{% endif %}
+      </button>
+    </div>
+
+    <!-- scanner shortcut -->
+    <a href="/scanner" class="hud-card" style="padding:14px;text-decoration:none;display:block;
+      transition:all .2s;animation:fadeInUp .4s ease .25s backwards"
+      onmouseover="this.style.boxShadow='0 0 20px var(--acc-dim)'"
+      onmouseout="this.style.boxShadow='none'">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px;color:var(--acc);animation:pulse-acc 2s ease-in-out infinite">▶</span>
+        <div>
+          <div style="font-family:'Orbitron',monospace;font-size:12px;font-weight:700;color:var(--acc);letter-spacing:.1em">SCANNER</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px;letter-spacing:.08em">ПОИСК РАБОВ →</div>
+        </div>
+      </div>
+    </a>
+
+  </div>
+
+</div>
+
+{% else %}
+<div style="text-align:center;padding:80px 20px;color:var(--text-dim)">
+  <div style="font-family:'Orbitron',monospace;font-size:18px;letter-spacing:.2em;margin-bottom:12px">NO DATA</div>
+  <button onclick="location.reload()" class="btn btn-primary">RETRY</button>
+</div>
+{% endif %}
+
+{% endblock %}
+{% block scripts %}
+<script>
+async function doRevenue(){
+  const r=await apiFetch('/api/revenue');
+  if(r.error){showToast(r.error,'err');return;}
+  if(r.added>0)showToast('COLLECTED: +'+fmtNum(r.added)+' 🪙','ok');
+  else if(r.message)showToast(r.message,'warn');
+  else showToast('ALREADY COLLECTED','warn');
+  setTimeout(()=>location.reload(),1400);
+}
+async function doBonus(){
+  const r=await apiFetch('/api/bonus');
+  if(r.error){showToast(r.error,'err');return;}
+  if(r.already)showToast('BONUS ALREADY CLAIMED TODAY','warn');
+  else showToast('BONUS ACQUIRED!','ok');
+}
+let autoOn={{ 'true' if auto_on else 'false' }};
+async function toggleAuto(){
+  const r=await apiFetch('/api/auto/toggle');
+  if(r.error){showToast(r.error,'err');return;}
+  autoOn=r.running;
+  // top bar btn
+  const b=document.getElementById('auto-btn');
+  const l=document.getElementById('auto-lbl');
+  const i=document.getElementById('auto-ico');
+  if(b&&l&&i){
+    b.className='btn btn-sm '+(autoOn?'btn-primary':'btn-ghost');
+    l.textContent=autoOn?'AUTO ON':'AUTO OFF';
+    i.textContent=autoOn?'◉':'◎';
+  }
+  // sidebar btn
+  const bb=document.getElementById('auto-toggle-btn');
+  if(bb){bb.textContent=autoOn?'⏹ STOP':'▶ START';bb.className='btn btn-sm '+(autoOn?'btn-danger':'btn-success');bb.style.width='100%';}
+  const badge=document.getElementById('auto-status-badge');
+  if(badge){badge.textContent=autoOn?'● ACTIVE':'○ IDLE';badge.style.color=autoOn?'#4ade80':'var(--text-dim)';}
+  showToast(autoOn?'AUTO-COLLECT STARTED':'AUTO-COLLECT STOPPED',autoOn?'ok':'info');
+}
+const LC={ok:'#4ade80',err:'#f87171',warn:'#fb923c',info:'#444'};
+const LP={ok:'[✓]',err:'[✗]',warn:'[!]',info:'[→]'};
+async function refreshLogs(){
+  const r=await apiFetch('/api/logs','GET');
+  if(!Array.isArray(r))return;
+  const c=document.getElementById('log-container');
+  c.innerHTML=r.length?r.map((e,i)=>`
+    <div style="display:flex;gap:7px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03);
+      animation:fadeInUp .15s ease ${i*.02}s backwards">
+      <span style="color:#2a2a2a;font-size:9px;white-space:nowrap;flex-shrink:0;padding-top:1px">${e.ts}</span>
+      <span style="color:${LC[e.level]||LC.info};flex-shrink:0">${LP[e.level]||LP.info}</span>
+      <span style="color:${LC[e.level]||LC.info}">${e.msg}</span>
+    </div>`).join('')
+    :'<div style="color:var(--text-dim);text-align:center;padding:50px 0;letter-spacing:.14em;font-size:10px">NO EVENTS</div>';
+}
+function clearLog(){document.getElementById('log-container').innerHTML=
+  '<div style="color:var(--text-dim);text-align:center;padding:50px 0;letter-spacing:.14em;font-size:10px">LOG CLEARED</div>';}
+setInterval(refreshLogs,8000);
+</script>
+{% endblock %}
