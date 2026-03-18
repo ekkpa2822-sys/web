@@ -14,7 +14,7 @@
 </div>
 
 <!-- ── STAT CARDS ── -->
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" class="mob-grid-2">
   <div class="scard" style="padding:14px;cursor:default">
     <div class="scard-label">◈ ВСЕГО ЮЗЕРОВ</div>
     <div class="scard-value" style="color:var(--acc)">{{ total_users }}</div>
@@ -38,14 +38,14 @@
 <div class="sec-label" style="color:#ffd60a">// ОЖИДАЮТ ОДОБРЕНИЯ [{{ pending|length }}]</div>
 <div class="hud-card" style="margin-bottom:16px;border-color:rgba(255,214,10,.25)">
   {% for u in pending %}
-  <div id="prow-{{ u.id }}" style="display:flex;align-items:center;gap:12px;padding:12px 16px;{% if not loop.last %}border-bottom:1px solid rgba(255,255,255,.04){% endif %}">
+  <div id="prow-{{ u.id }}" style="display:flex;align-items:center;gap:12px;padding:12px 16px;{% if not loop.last %}border-bottom:1px solid rgba(255,255,255,.04){% endif %}" class="mob-wrap">
     <div style="flex:1">
       <div style="font-family:'Orbitron',monospace;font-size:11px;color:var(--text);letter-spacing:.06em">{{ u.username }}</div>
       <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:3px">
         {{ u.email or 'без email' }} // зарег: {{ (u.created_at or '')[:10] }}
       </div>
     </div>
-    <div style="display:flex;gap:6px">
+    <div style="display:flex;gap:6px" class="mob-wrap">
       <button onclick="showXI({{ u.id }},'{{ u.username }}')" class="btn btn-ghost btn-sm">👁 XI</button>
       <button onclick="approveUser({{ u.id }})" class="btn btn-success btn-sm">✓ ОДОБРИТЬ</button>
       <button onclick="rejectUser({{ u.id }})" class="btn btn-danger btn-sm">✕ ОТКЛОНИТЬ</button>
@@ -56,12 +56,12 @@
 {% endif %}
 
 <!-- ── MAIN GRID ── -->
-<div style="display:grid;grid-template-columns:1fr 280px;gap:14px;align-items:start">
+<div style="display:grid;grid-template-columns:1fr 280px;gap:14px;align-items:start" class="mob-grid-1">
 
   <!-- USER TABLE -->
   <div>
     <div class="sec-label">// ПОЛЬЗОВАТЕЛИ СИСТЕМЫ</div>
-    <div class="hud-card" style="overflow-x:auto">
+    <div class="hud-card mob-scroll-x" style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;min-width:580px">
         <thead>
           <tr style="border-bottom:1px solid var(--acc-border)">
