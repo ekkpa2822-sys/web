@@ -11,9 +11,16 @@ from datetime import datetime
 from typing import Optional
 
 # ── Config ────────────────────────────────────────────────
-# DB saves permanently next to auth_db.py, regardless of working directory
+# DB_PATH можно переопределить через переменную окружения DB_PATH (Railway Volume)
+# Пример: DB_PATH=/data/panel_users.db
 _HERE   = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(_HERE, "panel_users.db")
+_default_db = os.path.join(_HERE, "panel_users.db")
+DB_PATH = os.environ.get("DB_PATH", _default_db)
+
+# Создаём директорию для БД если не существует (нужно для Railway Volume)
+_db_dir = os.path.dirname(DB_PATH)
+if _db_dir:
+    os.makedirs(_db_dir, exist_ok=True)
 SECRET_KEY   = os.environ.get("PANEL_SECRET") or secrets.token_hex(32)  # set PANEL_SECRET env var in prod
 SESSION_TTL  = 60 * 60 * 24 * 7   # 7 days
 COOKIE_NAME  = "panel_session"
