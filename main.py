@@ -259,8 +259,11 @@ async def login_post(request: Request):
     api.add_log(f"Вход: {user['username']} ({request.client.host})", "ok")
     auth_db.audit(user["id"], user["username"], "LOGIN", detail=f"ip={request.client.host}")
     resp = RedirectResponse("/dashboard", status_code=302)
+    # FIX: add Secure flag when behind HTTPS proxy (Railway, etc.)
+    is_https = request.headers.get("x-forwarded-proto","") == "https"
     resp.set_cookie(auth_db.COOKIE_NAME, token, httponly=True,
-                    max_age=60*60*24*7 if remember else None, samesite="lax")
+                    max_age=60*60*24*7 if remember else None,
+                    samesite="lax", secure=is_https)
     return resp
 
 @app.post("/register", response_class=HTMLResponse)
@@ -385,7 +388,12 @@ async def admin_approve(uid: int, request: Request):
 async def admin_reject(uid: int, request: Request):
     redir, admin = require_admin(request)
     if redir: return JSONResponse({"error": "forbidden"}, 403)
+    target = auth_db.get_user_by_id(uid)
     auth_db.update_user(uid, status="pending_xi", xi_token="")
+    # FIX: audit log for reject
+    if target:
+        auth_db.audit(admin["id"], admin["username"], "ADMIN_REJECT",
+            target=f"user:{target['username']}(id:{uid})", ip=request.client.host)
     return JSONResponse({"ok": True})
 
 # ══════════════════════════════════════════════════════
@@ -543,11 +551,16 @@ async def admin_create_user(request: Request):
     password = str(body.get("password",""))
     email    = body.get("email") or None
     role     = body.get("role","user")
+    # FIX: validate role
+    if role not in ("user", "admin"):
+        return JSONResponse({"error": "Недопустимая роль"})
     if len(username) < 3 or len(password) < 6:
         return JSONResponse({"error": "Логин мин 3, пароль мин 6"})
     new_user = auth_db.create_user(username, password, email, role)
     if not new_user:
         return JSONResponse({"error": "Логин или email уже занят"})
+    auth_db.audit(admin["id"], admin["username"], "ADMIN_CREATE_USER",
+        target=f"user:{username}", detail=f"role={role}")
     return JSONResponse({"ok": True, "id": new_user["id"]})
 
 @app.post("/api/admin/user/{uid}")
@@ -570,25 +583,49 @@ async def admin_edit_user(uid: int, request: Request):
         pw = body.get("password","")
         if len(pw) < 6: return JSONResponse({"error": "Min 6 chars"})
         auth_db.update_password(uid, pw)
+        # FIX: audit log
+        auth_db.audit(admin["id"], admin["username"], "ADMIN_RESET_PASSWORD",
+            target=f"user_id:{uid}", ip=request.client.host)
         return JSONResponse({"ok": True})
     if action == "set_role":
         role = body.get("role","user")
         if role not in ("user","admin"): return JSONResponse({"error": "Invalid role"})
         if uid == admin["id"]: return JSONResponse({"error": "Cannot change own role"})
         auth_db.update_user(uid, role=role)
+        # FIX: audit log
+        auth_db.audit(admin["id"], admin["username"], "ADMIN_SET_ROLE",
+            target=f"user_id:{uid}", detail=f"role={role}", ip=request.client.host)
         return JSONResponse({"ok": True})
     # Auto-generate password
     if body.get("reset_password"):
         import random, string
         new_pw = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
         auth_db.update_password(uid, new_pw)
+        # FIX: audit log
+        auth_db.audit(admin["id"], admin["username"], "ADMIN_AUTO_RESET_PW",
+            target=f"user_id:{uid}", ip=request.client.host)
         return JSONResponse({"ok": True, "new_password": new_pw})
     fields = {}
-    if body.get("email") is not None: fields["email"] = body["email"] or None
-    if body.get("role"):              fields["role"]  = body["role"]
-    if fields: auth_db.update_user(uid, **fields)
+    if body.get("email") is not None:
+        fields["email"] = body["email"] or None
+    if body.get("role"):
+        new_role = body["role"]
+        # FIX: validate role value
+        if new_role not in ("user", "admin"):
+            return JSONResponse({"error": "Недопустимая роль"})
+        # FIX: prevent admin from changing their own role via this path
+        if uid == admin["id"]:
+            return JSONResponse({"error": "Нельзя изменить свою роль"})
+        fields["role"] = new_role
+    if fields:
+        auth_db.update_user(uid, **fields)
+        # FIX: audit log for all edits
+        auth_db.audit(admin["id"], admin["username"], "ADMIN_EDIT_USER",
+            target=f"user_id:{uid}", detail=f"changed={list(fields.keys())}")
     if body.get("password") and len(body["password"]) >= 6:
         auth_db.update_password(uid, body["password"])
+        auth_db.audit(admin["id"], admin["username"], "ADMIN_RESET_PASSWORD",
+            target=f"user_id:{uid}")
     return JSONResponse({"ok": True})
 
 @app.delete("/api/admin/user/{uid}")
@@ -597,15 +634,34 @@ async def admin_delete_user(uid: int, request: Request):
     if redir: return JSONResponse({"error": "not_admin"}, 403)
     if uid == admin["id"]:
         return JSONResponse({"error": "Нельзя удалить себя"})
+    # FIX: fetch target before deletion for audit
+    target = auth_db.get_user_by_id(uid)
+    if not target:
+        return JSONResponse({"error": "Пользователь не найден"})
     auth_db.delete_user(uid)
+    # FIX: audit log
+    auth_db.audit(admin["id"], admin["username"], "ADMIN_DELETE_USER",
+        target=f"user:{target['username']}(id:{uid})",
+        ip=request.client.host)
     return JSONResponse({"ok": True})
 
 @app.post("/api/admin/user/{uid}/ban")
 async def admin_ban_user(uid: int, request: Request):
     redir, admin = require_admin(request)
     if redir: return JSONResponse({"error": "not_admin"}, 403)
+    # FIX: no self-ban
+    if uid == admin["id"]:
+        return JSONResponse({"error": "Нельзя заблокировать самого себя"})
+    target = auth_db.get_user_by_id(uid)
+    if not target:
+        return JSONResponse({"error": "Пользователь не найден"})
     body = await request.json()
-    auth_db.update_user(uid, is_active=1 if body.get("activate") else 0)
+    activate = bool(body.get("activate"))
+    auth_db.update_user(uid, is_active=1 if activate else 0)
+    # FIX: audit log
+    action_str = "UNBAN" if activate else "BAN"
+    auth_db.audit(admin["id"], admin["username"], f"ADMIN_{action_str}",
+        target=f"user:{target['username']}(id:{uid})", ip=request.client.host)
     return JSONResponse({"ok": True})
 
 # ══════════════════════════════════════════════════════
@@ -970,7 +1026,11 @@ async def save_settings(request: Request):
 
 @app.post("/api/reauth")
 async def do_reauth(request: Request):
-    if not api.sess["x_init_data"]: return JSONResponse({"error":"Нет x-init-data"})
+    # FIX: require auth before reauth
+    if _chk(request): return JSONResponse({"error":"not_auth"}, 401)
+    redir2, cur_user = require_login(request)
+    if not cur_user or not cur_user.get("x_init_data"):
+        return JSONResponse({"error":"Нет x-init-data"})
     ok = api.reauth()
     return JSONResponse({"ok":ok})
 
@@ -1101,9 +1161,12 @@ async def _ws_broadcast(msg):
         except: dead.add(ws)
     scanner_ws_clients -= dead
 
-def _safe_state():
+def _safe_state(for_admin=False):
     s = dict(scanner_state)
     s["start_time"] = s["start_time"].isoformat() if s["start_time"] else None
+    # FIX: do not expose started_by (user_id) to non-admin users
+    if not for_admin:
+        s.pop("started_by", None)
     return s
 
 @app.post("/api/scanner/start")
@@ -1117,7 +1180,10 @@ async def scanner_start(request: Request):
     max_price = int(body.get("max_price", api.cfg["max_price"]))
     delay     = float(body.get("delay",0.8))
     auto_buy  = bool(body.get("auto_buy",False))
+    MAX_RANGE = 200_000  # FIX: cap scan range to prevent abuse
     if id_from >= id_to: return JSONResponse({"error":"id_from должен быть меньше id_to"})
+    if id_to - id_from > MAX_RANGE: return JSONResponse({"error":f"Диапазон не должен превышать {MAX_RANGE:,} ID"})
+    if id_from < 1: return JSONResponse({"error":"id_from должен быть >= 1"})
     scanner_state["started_by"] = cur_user["id"] if cur_user else None
     threading.Thread(target=_scanner_worker,args=(id_from,id_to,max_price,delay,auto_buy),daemon=True).start()
     return JSONResponse({"ok":True})
@@ -1158,10 +1224,17 @@ async def scanner_get_state(request: Request):
 
 @app.websocket("/ws/scanner")
 async def scanner_ws(websocket: WebSocket):
+    # FIX: authenticate WebSocket via session cookie
+    token = websocket.cookies.get(auth_db.COOKIE_NAME)
+    user = auth_db.get_session(token) if token else None
+    if not user or not user.get("is_active") or user.get("status") != "active":
+        await websocket.close(code=4401)
+        return
     await websocket.accept()
     scanner_ws_clients.add(websocket)
     try:
-        await websocket.send_text(json.dumps({"type":"state","state":_safe_state()}))
+        is_admin = user.get("role") == "admin"
+        await websocket.send_text(json.dumps({"type":"state","state":_safe_state(for_admin=is_admin)}))
         while True: await websocket.receive_text()
     except WebSocketDisconnect:
         scanner_ws_clients.discard(websocket)
@@ -1188,5 +1261,3 @@ def make_sess(user: dict) -> dict:
     if not base.get("vk_user_id"):
         base["vk_user_id"] = user.get("vk_uid", "")
     return base
-
-
