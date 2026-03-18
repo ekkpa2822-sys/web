@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}SETUP // SLAVES.SU{% endblock %}
+{% block content %}
+
+{% if submitted or status == 'pending_approval' %}
+<!-- ── ОЖИДАНИЕ ПРОВЕРКИ ── -->
+<div style="display:flex;align-items:center;justify-content:center;height:calc(100vh - 120px)">
+  <div style="max-width:480px;width:100%;text-align:center">
+
+    <div style="font-size:40px;margin-bottom:14px;animation:logoBlink 2s infinite">🔒</div>
+    <div class="page-title" style="justify-content:center;margin-bottom:8px">ОЖИДАНИЕ ОДОБРЕНИЯ</div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.12em;margin-bottom:24px">
+      ЗАЯВКА ОТПРАВЛЕНА — ОЖИДАЙ РЕШЕНИЯ АДМИНИСТРАТОРА
+    </div>
+
+    <div class="hud-card" style="padding:24px;margin-bottom:14px">
+      <!-- Animated waiting indicator -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:16px">
+        {% for i in range(5) %}
+        <div style="width:6px;height:6px;background:var(--acc);border-radius:50%;animation:dotPulse 1.4s ease-in-out infinite;animation-delay:{{ i * 0.2 }}s;opacity:.3"></div>
+        {% endfor %}
+      </div>
+      <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);letter-spacing:.1em;margin-bottom:10px">PENDING APPROVAL</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);line-height:1.9;letter-spacing:.05em">
+        Администратор проверит твой <span style="color:var(--acc)">x-init-data</span><br>
+        и активирует доступ к панели.<br>
+        <span style="color:var(--text-dim);font-size:9px;opacity:.6">Страница обновляется автоматически каждые 10 сек</span>
+      </div>
+      <div style="margin-top:18px;display:flex;align-items:center;justify-content:center;gap:6px">
+        <div style="width:5px;height:5px;border-radius:50%;background:#00ff88;animation:statusPulse 2s infinite"></div>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#00ff88;letter-spacing:.1em">ОЖИДАНИЕ ОТВЕТА...</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button onclick="checkStatus()" class="btn btn-outline btn-sm">↺ ПРОВЕРИТЬ СТАТУС</button>
+      <a href="/logout" class="btn btn-ghost btn-sm">⏻ ВЫЙТИ</a>
+    </div>
+    <div id="status-msg" style="margin-top:12px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);min-height:16px"></div>
+  </div>
+</div>
+
+<style>
+@keyframes dotPulse {
+  0%,80%,100%{transform:scale(1);opacity:.3}
+  40%{transform:scale(1.4);opacity:1}
+}
+</style>
+
+{% else %}
+<!-- ── ИНСТРУКЦИЯ + ФОРМА ── -->
+
+<div style="max-width:860px;margin:0 auto">
+  <div style="text-align:center;margin-bottom:22px">
+    <div class="page-title" style="justify-content:center;margin-bottom:6px">ПРИВЯЗКА VK АККАУНТА</div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.1em">
+      ПРИВЕТ, <span style="color:var(--acc)">{{ user.username|upper }}</span> — НУЖНА АВТОРИЗАЦИЯ VK ДЛЯ РАБОТЫ ПАНЕЛИ
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
+
+    <!-- LEFT: инструкция -->
+    <div class="hud-card" style="padding:18px">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.15em;margin-bottom:14px">// КАК ПОЛУЧИТЬ X-INIT-DATA</div>
+      {% for n, title, desc in [
+        ('1','Открой игру в браузере','Зайди на <a href="https://vk.com/app51854287" target="_blank" style="color:var(--acc)">vk.com/app51854287</a> — это slaves.su в VK'),
+        ('2','Открой DevTools','Нажми <span style="color:var(--acc);border:1px solid var(--acc-border);padding:1px 6px">F12</span> → вкладка <span style="color:var(--acc)">Network</span>'),
+        ('3','Обнови страницу игры','Нажми <span style="color:var(--acc);border:1px solid var(--acc-border);padding:1px 6px">F5</span> — в списке появятся запросы'),
+        ('4','Найди запрос','Любой запрос к <span style="color:var(--acc)">api.slaves.su</span> → вкладка <span style="color:var(--acc)">Headers</span>'),
+        ('5','Скопируй x-init-data','Найди заголовок <span style="color:var(--acc)">x-init-data</span> → скопируй всё его значение'),
+      ] %}
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+        <div style="width:20px;height:20px;background:var(--acc-dim);border:1px solid var(--acc-border);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--acc);flex-shrink:0">{{ n }}</div>
+        <div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:var(--text);letter-spacing:.04em">{{ title }}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px;line-height:1.6">{{ desc|safe }}</div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <div style="margin-top:14px;background:var(--acc-dim);border:1px solid var(--acc-border);padding:10px 12px">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--acc);letter-spacing:.12em;margin-bottom:4px">// ЧТО ПРОИСХОДИТ ДАЛЬШЕ</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);line-height:1.7">
+          1. Твой x-init-data уходит на проверку<br>
+          2. Администратор верифицирует токен<br>
+          3. После одобрения — полный доступ к панели
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: форма -->
+    <div class="hud-card" style="padding:18px">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.15em;margin-bottom:12px">// ВСТАВЬ X-INIT-DATA</div>
+
+      <div id="err" style="display:none;background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.3);padding:9px 12px;font-family:'Share Tech Mono',monospace;font-size:10px;color:#f87171;margin-bottom:12px;letter-spacing:.06em"></div>
+
+      <div style="position:relative;margin-bottom:8px">
+        <textarea id="xi-inp" rows="6" placeholder="vk_user_id=12345&sign=...&#10;&#10;или&#10;&#10;query_id=AAH...&user=%7B..."
+          style="background:rgba(0,0,0,.8);border:1px solid var(--acc-border);padding:10px 12px;font-size:10px;
+          color:var(--text);outline:none;width:100%;resize:none;font-family:'Share Tech Mono',monospace;
+          transition:border-color .2s;letter-spacing:.03em;line-height:1.5"
+          onfocus="this.style.borderColor='var(--acc)'" onblur="this.style.borderColor='var(--acc-border)'"
+          oninput="updateCounter(this)"></textarea>
+        <div id="xi-valid-icon" style="display:none;position:absolute;top:8px;right:8px;font-size:14px">✓</div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div id="xi-counter" style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-dim);letter-spacing:.08em">0 символов</div>
+        <div id="xi-status-hint" style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-dim);letter-spacing:.06em">мин 30 символов</div>
+      </div>
+
+      <!-- Progress bar for xi length -->
+      <div class="progress-track" style="margin-bottom:14px;height:2px">
+        <div id="xi-progress" class="progress-fill" style="width:0%;transition:width .3s"></div>
+      </div>
+
+      <button onclick="submitXI()" id="submit-btn" class="btn btn-red" style="width:100%;justify-content:center;margin-bottom:10px">
+        ▶ ОТПРАВИТЬ НА ПРОВЕРКУ
+      </button>
+      <a href="/logout" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center">⏻ ВЫЙТИ</a>
+
+      <div style="margin-top:14px;padding:10px 12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05)">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);line-height:1.7">
+          <span style="color:var(--yellow)">[!]</span> x-init-data сохраняется зашифрованным и используется только для авторизации в игре.<br>
+          <span style="color:var(--yellow)">[!]</span> Никогда не давай его посторонним.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+{% block scripts %}
+<script>
+function updateCounter(el){
+  const len = el.value.trim().length;
+  const counter = document.getElementById('xi-counter');
+  const hint    = document.getElementById('xi-status-hint');
+  const icon    = document.getElementById('xi-valid-icon');
+  const prog    = document.getElementById('xi-progress');
+  counter.textContent = len + ' символов';
+  const pct = Math.min(len / 300 * 100, 100);
+  prog.style.width = pct + '%';
+  if(len >= 30){
+    hint.textContent = '[OK] достаточно';
+    hint.style.color = '#00ff88';
+    icon.style.display = 'block';
+    icon.style.color = '#00ff88';
+  } else {
+    hint.textContent = 'мин 30 символов';
+    hint.style.color = 'var(--text-dim)';
+    icon.style.display = 'none';
+  }
+}
+
+async function submitXI(){
+  const xi = document.getElementById('xi-inp')?.value?.trim();
+  const err = document.getElementById('err');
+  const btn = document.getElementById('submit-btn');
+  if(!xi || xi.length < 30){
+    err.style.display='block';
+    err.textContent='[ERR] Слишком короткое — скопируй полный заголовок';
+    return;
+  }
+  err.style.display='none';
+  btn.textContent='⟳ ОТПРАВКА...'; btn.disabled=true;
+  const r = await fetch('/api/submit-xi',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({x_init_data:xi})});
+  const d = await r.json();
+  if(d.ok){
+    location.href='/setup?submitted=1';
+  } else {
+    err.style.display='block';
+    err.textContent='[ERR] '+(d.error||'Ошибка — попробуй снова');
+    btn.textContent='▶ ОТПРАВИТЬ НА ПРОВЕРКУ'; btn.disabled=false;
+  }
+}
+
+async function checkStatus(){
+  const msg = document.getElementById('status-msg');
+  msg.textContent='[>] Проверяю...';
+  const r = await fetch('/api/check-status');
+  const d = await r.json();
+  if(d.status === 'active'){
+    msg.textContent='[OK] Доступ одобрен! Перенаправление...';
+    msg.style.color='#00ff88';
+    setTimeout(()=>location.href='/dashboard', 1000);
+  } else {
+    msg.textContent='[>] Всё ещё ожидает проверки...';
+    msg.style.color='var(--text-dim)';
+  }
+}
+{% if submitted or status == 'pending_approval' %}
+setInterval(checkStatus, 10000);
+{% endif %}
+</script>
+{% endblock %}

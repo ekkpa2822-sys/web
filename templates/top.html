@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}TOP RANKING // SLAVES.SU{% endblock %}
+{% block content %}
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
+  <div>
+    <div class="page-title glitch">TOP RANKING</div>
+    <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:4px;letter-spacing:.1em">
+      БОГАТЕЙШИЕ ИГРОКИ
+      {% if position %}&nbsp;·&nbsp; ТВОЯ ПОЗИЦИЯ: <span style="color:var(--red)">#{{ "{:,}".format(position).replace(",", " ") }}</span>{% endif %}
+    </div>
+  </div>
+</div>
+
+{% if king %}
+{% set kname = king.first_name ~ ' ' ~ king.last_name %}
+{% set kphoto = king.photo_url or king.photo_100 or '' %}
+<div class="card card-red" style="padding:20px;margin-bottom:16px;position:relative;overflow:hidden">
+  <div style="position:absolute;top:10px;right:20px;font-family:var(--font-head);font-size:60px;opacity:.04;color:var(--red);pointer-events:none">KING</div>
+  <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;margin-bottom:12px">// ТЕКУЩИЙ КОРОЛЬ</div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div class="ava" style="width:52px;height:52px;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));font-size:18px">
+      <div class="ava-letter" style="font-size:18px">{{ kname[0].upper() }}</div>
+      {% if kphoto %}<img src="{{ kphoto }}" referrerpolicy="no-referrer" loading="lazy" style="opacity:0;transition:opacity .3s" onload="this.style.opacity=1;this.previousElementSibling.style.display='none'" onerror="this.remove()">{% endif %}
+    </div>
+    <div style="flex:1">
+      <div style="font-family:var(--font-head);font-size:18px;font-weight:700;color:var(--yellow);text-shadow:0 0 14px rgba(255,214,10,.4)">{{ kname|upper }}</div>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:3px;display:flex;align-items:center;gap:12px">
+        <span>ID:{{ king.vkid }}</span>
+        <span style="color:var(--yellow)">{{ fmt(king.balance) }} 🪙</span>
+        {% if king.slaves_count is not none %}<span>⛓ {{ king.slaves_count }}</span>{% endif %}
+      </div>
+    </div>
+    <button onclick="buyPlayer({{ king.vkid }},'{{ kname }}')" class="btn btn-outline">⬡ НАНЯТЬ</button>
+  </div>
+</div>
+{% endif %}
+
+<!-- podium top 3 -->
+{% if players|length >= 3 %}
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+  {% for idx, medal, col, rank in [(1,'🥈','#c0c0c0',2),(0,'🥇','var(--yellow)',1),(2,'🥉','#cd7f32',3)] %}
+  {% set p = players[idx] %}
+  {% set pn = p.first_name ~ ' ' ~ p.last_name %}
+  {% set pp = p.photo_url or p.photo_100 or '' %}
+  <div class="card" style="padding:16px;text-align:center;transition:all .2s;border-color:{% if idx==0 %}rgba(255,214,10,.3){% else %}var(--border){% endif %}" onmouseover="this.style.borderColor='{{ col }}';this.style.boxShadow='0 0 16px rgba(230,57,70,.1)'" onmouseout="this.style.borderColor='{% if idx==0 %}rgba(255,214,10,.3){% else %}var(--border){% endif %}';this.style.boxShadow='none'">
+    <div style="font-size:22px;margin-bottom:10px">{{ medal }}</div>
+    <div class="ava" style="width:46px;height:46px;margin:0 auto 10px;font-size:16px">
+      <div class="ava-letter" style="font-size:16px">{{ pn[0].upper() }}</div>
+      {% if pp %}<img src="{{ pp }}" referrerpolicy="no-referrer" loading="lazy" style="opacity:0;transition:opacity .3s" onload="this.style.opacity=1;this.previousElementSibling.style.display='none'" onerror="this.remove()">{% endif %}
+    </div>
+    <div style="font-family:var(--font-head);font-size:12px;font-weight:700;color:{{ col }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ pn|upper }}</div>
+    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin:4px 0">ID:{{ p.vkid }}</div>
+    <div style="font-family:var(--font-head);font-size:14px;font-weight:700;color:var(--yellow)">{{ fmt(p.balance) }} 🪙</div>
+    <button onclick="event.stopPropagation();buyPlayer({{ p.vkid }},'{{ pn }}')" class="btn btn-outline btn-sm" style="margin-top:10px;width:100%">НАНЯТЬ</button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- full table -->
+<div class="card card-red">
+  <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em">// ПОЛНЫЙ РЕЙТИНГ — {{ players|length }} ИГРОКОВ</div>
+    <span style="font-family:var(--font-mono);font-size:9px;color:var(--red)">BY BALANCE</span>
+  </div>
+  <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="border-bottom:1px solid var(--border)">
+        <th style="padding:8px 14px;text-align:left;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em;width:44px">#</th>
+        <th style="padding:8px 14px;text-align:left;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em">ИГРОК</th>
+        <th style="padding:8px 14px;text-align:right;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em">МОНЕТЫ</th>
+        <th style="padding:8px 14px;text-align:right;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em">РАБОВ</th>
+        <th style="padding:8px 14px;text-align:center;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em">ACT</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in players %}
+    {% set pn = p.first_name ~ ' ' ~ p.last_name %}
+    {% set pp = p.photo_url or p.photo_100 or '' %}
+    {% set is_me = p.vkid == sess.vk_user_id %}
+    <tr style="border-bottom:1px solid rgba(230,57,70,.05);cursor:pointer;transition:background .1s" onclick="window.location='/search?vkid={{ p.vkid }}'" onmouseover="this.style.background='var(--red-dim)'" onmouseout="this.style.background='transparent'">
+      <td style="padding:10px 14px">
+        {% if loop.index == 1 %}<span style="font-size:15px">🥇</span>
+        {% elif loop.index == 2 %}<span style="font-size:15px">🥈</span>
+        {% elif loop.index == 3 %}<span style="font-size:15px">🥉</span>
+        {% else %}<span style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim)">{{ loop.index }}</span>{% endif %}
+      </td>
+      <td style="padding:10px 14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="ava">
+            <div class="ava-letter">{{ pn[0].upper() }}</div>
+            {% if pp %}<img src="{{ pp }}" referrerpolicy="no-referrer" loading="lazy" style="opacity:0;transition:opacity .3s" onload="this.style.opacity=1;this.previousElementSibling.style.display='none'" onerror="this.remove()">{% endif %}
+          </div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:{% if loop.index==1 %}var(--yellow){% elif loop.index<=3 %}#c0c0c0{% elif is_me %}var(--red){% else %}var(--text){% endif %}">
+              {{ pn }}{% if is_me %} <span style="color:var(--red);font-size:9px">[YOU]</span>{% endif %}
+            </div>
+            <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:1px">ID:{{ p.vkid }}</div>
+          </div>
+        </div>
+      </td>
+      <td style="padding:10px 14px;text-align:right;font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--yellow)">
+        {{ fmt(p.balance or 0) }}<span style="color:var(--text-dim);font-size:9px"> 🪙</span>
+      </td>
+      <td style="padding:10px 14px;text-align:right;font-family:var(--font-mono);font-size:12px;color:var(--text-dim)">
+        {{ [p.slaves_count or 0, 0]|max }}
+      </td>
+      <td style="padding:10px 14px;text-align:center" onclick="event.stopPropagation()">
+        <button onclick="buyPlayer({{ p.vkid }},'{{ pn }}')" class="btn btn-outline btn-sm">⬡</button>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+async function buyPlayer(vkid,name){
+  const r=await apiFetch(`/api/buy/${vkid}`);
+  if(r.error){showToast('[ERR] '+r.error,'err');return;}
+  showToast('[OK] HIRED: '+name+' / '+fmtNum(r.cost)+' 🪙','ok');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %}ПРОФИЛЬ // SLAVES.SU{% endblock %}
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+  <div class="page-title glitch">МОЙ ПРОФИЛЬ</div>
+  {% if current_user.role == 'admin' %}
+  <a href="/admin" class="btn btn-danger btn-sm">⚠ ADMIN PANEL</a>
+  {% endif %}
+</div>
+
+<div style="display:grid;grid-template-columns:280px 1fr;gap:14px;align-items:start">
+
+  <!-- LEFT: identity card -->
+  <div style="display:flex;flex-direction:column;gap:10px">
+
+    <div class="hud-card" style="overflow:hidden">
+      <!-- banner -->
+      <div class="pbanner">
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:50px;color:var(--acc);opacity:.06;letter-spacing:.3em">USER</div>
+      </div>
+      <!-- avatar initial -->
+      <div style="display:flex;justify-content:center;margin-top:-26px;position:relative;z-index:2">
+        <div style="width:52px;height:52px;background:var(--acc-dim);border:2px solid var(--acc-bright);display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:20px;font-weight:700;color:var(--acc);text-shadow:0 0 10px var(--acc-glow);clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))">
+          {{ (current_user.username or '?')[0].upper() }}
+        </div>
+      </div>
+      <!-- name + role -->
+      <div style="text-align:center;padding:8px 16px 14px">
+        <div style="font-family:var(--font-head);font-size:15px;font-weight:700;color:var(--acc);letter-spacing:.1em;text-shadow:0 0 10px var(--acc-glow)">{{ current_user.username|upper }}</div>
+        <div style="margin-top:5px">
+          <span style="font-family:var(--font-mono);font-size:8px;letter-spacing:.1em;padding:2px 8px;border:1px solid;{% if current_user.role == 'admin' %}color:#f87171;border-color:rgba(220,38,38,.4);background:rgba(220,38,38,.08){% else %}color:var(--text-dim);border-color:var(--acc-border){% endif %}">
+            {{ current_user.role|upper }}
+          </span>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:8px;color:var(--text-dim);margin-top:6px;letter-spacing:.08em">
+          ID: {{ current_user.id }} &nbsp;·&nbsp; SINCE {{ (current_user.created_at or '')[:10] }}
+        </div>
+      </div>
+    </div>
+
+    <!-- VK link status -->
+    <div class="hud-card" style="padding:14px">
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;margin-bottom:10px">// VK ПРИВЯЗКА</div>
+      {% if sess and sess.vk_user_id %}
+      <div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.2)">
+        <span style="font-size:20px;color:#4ade80">✓</span>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:#4ade80;font-weight:600">ПРИВЯЗАН</div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:1px">{{ sess.vk_first }} {{ sess.vk_last }} · id:{{ sess.vk_user_id }}</div>
+        </div>
+      </div>
+      <a href="/search?vkid={{ sess.vk_user_id }}" class="btn btn-ghost btn-sm" style="margin-top:8px;width:100%;justify-content:center">◎ МОЙ ПРОФИЛЬ VK</a>
+      <a href="https://vk.com/id{{ sess.vk_user_id }}" target="_blank" style="display:block;text-align:center;font-family:var(--font-mono);font-size:8px;color:var(--text-dim);margin-top:6px;text-decoration:none;letter-spacing:.08em;transition:color .15s" onmouseover="this.style.color='var(--acc)'" onmouseout="this.style.color='var(--text-dim)'">[ОТКРЫТЬ VK ↗]</a>
+      {% else %}
+      <div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2)">
+        <span style="font-size:20px;color:#f87171">✗</span>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:#f87171">НЕ ПРИВЯЗАН</div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:1px">Введи x-init-data в настройках</div>
+        </div>
+      </div>
+      <a href="/settings" class="btn btn-outline btn-sm" style="margin-top:8px;width:100%;justify-content:center">◐ НАСТРОЙКИ</a>
+      {% endif %}
+    </div>
+
+    <!-- actions -->
+    <div class="hud-card" style="padding:14px">
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;margin-bottom:10px">// ДЕЙСТВИЯ</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <a href="/dashboard" class="btn btn-ghost btn-sm" style="justify-content:flex-start;gap:8px"><span>◈</span> DASHBOARD</a>
+        <a href="/settings"  class="btn btn-ghost btn-sm" style="justify-content:flex-start;gap:8px"><span>◐</span> НАСТРОЙКИ</a>
+        {% if current_user.role == 'admin' %}
+        <a href="/admin"     class="btn btn-danger btn-sm" style="justify-content:flex-start;gap:8px"><span>⚠</span> ПАНЕЛЬ АДМИНА</a>
+        {% endif %}
+        <a href="/logout"    class="btn btn-ghost btn-sm" style="justify-content:flex-start;gap:8px;color:var(--text-dim)"><span>⏻</span> ВЫЙТИ</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: settings + info -->
+  <div style="display:flex;flex-direction:column;gap:12px">
+
+    <!-- panel account info -->
+    <div class="hud-card" style="padding:16px">
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;margin-bottom:12px">// АККАУНТ ПАНЕЛИ</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        {% for label, val, col in [
+          ('USERNAME',   current_user.username,              'var(--acc)'),
+          ('EMAIL',      current_user.email or '—',          'var(--text)'),
+          ('ROLE',       current_user.role|upper,             '#f87171' if current_user.role == 'admin' else 'var(--text-dim)'),
+          ('STATUS',     'ACTIVE' if current_user.is_active else 'BANNED', '#4ade80' if current_user.is_active else '#f87171'),
+          ('CREATED',    (current_user.created_at or '')[:19], 'var(--text-dim)'),
+          ('LAST LOGIN', (current_user.last_login or '—')[:19], 'var(--text-dim)'),
+        ] %}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(255,255,255,.02);border:1px solid var(--acc-border)">
+          <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.1em">{{ label }}</span>
+          <span style="font-family:var(--font-mono);font-size:10px;color:{{ col }};font-weight:600">{{ val }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- change email -->
+    <div class="hud-card" style="padding:16px">
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;margin-bottom:12px">// ИЗМЕНИТЬ EMAIL</div>
+      <div style="display:flex;gap:8px">
+        <input id="new-email" type="email" placeholder="новый email..." value="{{ current_user.email or '' }}"
+          style="flex:1;background:rgba(0,0,0,.7);border:1px solid var(--acc-border);color:var(--text);font-family:var(--font-mono);font-size:11px;padding:8px 10px;outline:none;transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--acc-bright)'" onblur="this.style.borderColor='var(--acc-border)'">
+        <button onclick="saveEmail()" class="btn btn-ghost btn-sm">СОХРАНИТЬ</button>
+      </div>
+    </div>
+
+    <!-- VK session status -->
+    <div class="hud-card" style="padding:16px" id="xi-status-card">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.15em;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+        // VK СЕССИЯ
+        <button onclick="checkXiStatus()" class="btn btn-ghost btn-sm" style="font-size:8px">◉ ПРОВЕРИТЬ</button>
+      </div>
+      <div id="xi-status-body">
+        {% if current_user.x_init_data %}
+        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.15)">
+          <span id="xi-dot" style="font-size:16px">⏳</span>
+          <div>
+            <div id="xi-status-text" style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text);letter-spacing:.05em">ПРОВЕРКА...</div>
+            <div id="xi-status-sub" style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-dim);margin-top:2px">нажми "Проверить"</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button onclick="refreshXiToken()" class="btn btn-outline btn-sm" style="flex:1">↺ ОБНОВИТЬ ТОКЕН</button>
+          <a href="/setup" class="btn btn-ghost btn-sm" style="flex:1;text-align:center">NEW X-INIT-DATA</a>
+        </div>
+        {% else %}
+        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(220,38,38,.05);border:1px solid rgba(220,38,38,.2)">
+          <span style="font-size:16px">✗</span>
+          <div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:#f87171">НЕТ X-INIT-DATA</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-dim);margin-top:2px">нужна авторизация VK</div>
+          </div>
+        </div>
+        <a href="/setup" class="btn btn-red" style="width:100%;justify-content:center;margin-top:8px">▶ ПРИВЯЗАТЬ VK</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- change password -->
+    <div class="hud-card" style="padding:16px">
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;margin-bottom:12px">// СМЕНИТЬ ПАРОЛЬ</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        {% for id_, ph in [('pw-old','ТЕКУЩИЙ ПАРОЛЬ'),('pw-new','НОВЫЙ ПАРОЛЬ (МИН 6)'),('pw-new2','ПОВТОР НОВОГО')] %}
+        <input id="{{ id_ }}" type="password" placeholder="{{ ph }}"
+          style="background:rgba(0,0,0,.7);border:1px solid var(--acc-border);color:var(--text);font-family:var(--font-mono);font-size:11px;padding:8px 10px;outline:none;width:100%;transition:border-color .2s;letter-spacing:.05em"
+          onfocus="this.style.borderColor='var(--acc-bright)'" onblur="this.style.borderColor='var(--acc-border)'">
+        {% endfor %}
+        <button onclick="changePassword()" class="btn btn-outline btn-sm" style="align-self:flex-start">◐ ОБНОВИТЬ ПАРОЛЬ</button>
+      </div>
+    </div>
+
+    <!-- VK profile widget (if linked) -->
+    {% if vk_profile %}
+    <div class="hud-card" style="padding:16px">
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:.15em;margin-bottom:12px">// ДАННЫЕ SLAVES.SU</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        {% for ico, label, val, col in [
+          ('⬡','БАЛАНС',    fmt(vk_profile.balance)~' 🪙',  '#ffd60a'),
+          ('▲','ДОХОД/Ч',   fmt(vk_profile.income)~' 🪙',   '#0ea5e9'),
+          ('⛓','РАБОВ',    (vk_profile.slaves_count or 0),  'var(--acc)'),
+          ('◈','МОЯ ЦЕНА', fmt(vk_profile.cost)~' 🪙',      'var(--text)'),
+        ] %}
+        <div style="background:rgba(255,255,255,.02);border:1px solid var(--acc-border);padding:10px 12px;text-align:center">
+          <div style="font-family:var(--font-mono);font-size:8px;color:var(--text-dim);margin-bottom:4px;letter-spacing:.08em">{{ ico }} {{ label }}</div>
+          <div style="font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:{{ col }}">{{ val }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+async function saveEmail(){
+  const email=document.getElementById('new-email').value.trim();
+  const r=await apiFetch('/api/profile/update','POST',{email});
+  if(r.error){showToast('[ERR] '+r.error,'err');return;}
+  showToast('[OK] EMAIL UPDATED','ok');
+}
+async function changePassword(){
+  const old_pw=document.getElementById('pw-old').value;
+  const new_pw=document.getElementById('pw-new').value;
+  const new_pw2=document.getElementById('pw-new2').value;
+  if(new_pw!==new_pw2){showToast('[!] PASSWORDS DO NOT MATCH','warn');return;}
+  if(new_pw.length<6){showToast('[!] MIN 6 CHARS','warn');return;}
+  const r=await apiFetch('/api/profile/password','POST',{old_password:old_pw,new_password:new_pw});
+  if(r.error){showToast('[ERR] '+r.error,'err');return;}
+  showToast('[OK] PASSWORD CHANGED','ok');
+  ['pw-old','pw-new','pw-new2'].forEach(id=>document.getElementById(id).value='');
+}
+</script>
+{% endblock %}

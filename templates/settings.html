@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+{% block title %}НАСТРОЙКИ // SLAVES.SU{% endblock %}
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+  <div class="page-title glitch">НАСТРОЙКИ</div>
+  <button onclick="saveAll()" class="btn btn-primary">⬡ СОХРАНИТЬ</button>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+
+  <!-- ── АВТО-СБОР ── -->
+  <div class="hud-card">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--acc-border);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9.5px;color:var(--text-dim);letter-spacing:.15em">// АВТО-СБОР МОНЕТ</div>
+      <span id="auto-badge" style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:.1em;color:{% if auto_on %}#4ade80{% else %}var(--text-dim){% endif %}">
+        {% if auto_on %}■ ACTIVE{% else %}□ IDLE{% endif %}
+      </span>
+    </div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,.02);border:1px solid var(--acc-border)">
+        <div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;color:var(--text);letter-spacing:.04em">Авто-сбор монет</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px">Фоновый сбор по расписанию</div>
+        </div>
+        <button onclick="toggleAuto()" id="auto-btn" class="btn {% if auto_on %}btn-danger{% else %}btn-success{% endif %} btn-sm">
+          {% if auto_on %}⏹ СТОП{% else %}▶ СТАРТ{% endif %}
+        </button>
+      </div>
+
+      <div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.12em;margin-bottom:6px">ИНТЕРВАЛ (СЕК)</div>
+        <input id="interval-inp" type="number" value="{{ cfg.revenue_interval }}" min="30" max="3600" class="input">
+        <div style="display:flex;gap:5px;margin-top:6px">
+          {% for v, l in [(60,'1М'),(180,'3М'),(300,'5М'),(600,'10М')] %}
+          <button onclick="document.getElementById('interval-inp').value={{ v }}" class="btn btn-ghost btn-sm">{{ l }}</button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,.02);border:1px solid var(--acc-border)">
+        <div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;color:var(--text)">Авто-бонус</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px">Ежедневный бонус автоматически</div>
+        </div>
+        <label class="tw"><input type="checkbox" id="bonus-cb" {% if cfg.auto_bonus %}checked{% endif %}><div class="ttrack"></div></label>
+      </div>
+
+      <div style="background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.15);padding:10px 12px">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.12em;margin-bottom:8px">// СТАТИСТИКА СЕССИИ</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-dim)">СОБРАНО</div>
+            <div style="font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:#4ade80;margin-top:2px">{{ fmt(stats.revenue_collected) }}</div>
+          </div>
+          <div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-dim)">БОНУСОВ</div>
+            <div style="font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:var(--acc);margin-top:2px">{{ stats.bonus_collected }}</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── ПАРАМЕТРЫ ПОКУПКИ ── -->
+  <div class="hud-card">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--acc-border)">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9.5px;color:var(--text-dim);letter-spacing:.15em">// ПАРАМЕТРЫ ПОКУПКИ</div>
+    </div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+
+      <div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.12em;margin-bottom:6px">МАКС. ЦЕНА 🪙</div>
+        <input id="max-price-inp" type="number" value="{{ cfg.max_price }}" min="0" class="input">
+        <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">
+          {% for p, l in [(100000,'100К'),(500000,'500К'),(1000000,'1М'),(5000000,'5М')] %}
+          <button onclick="document.getElementById('max-price-inp').value={{ p }}" class="btn btn-ghost btn-sm">{{ l }}</button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.12em;margin-bottom:6px">МАКС. КОЛ-ВО ЗА РАЗ</div>
+        <input id="max-buy-inp" type="number" value="{{ cfg.max_buy }}" min="1" max="500" class="input">
+      </div>
+
+      <div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.12em;margin-bottom:6px">ЗАДЕРЖКА (СЕК)</div>
+        <input id="delay-inp" type="number" value="{{ cfg.delay_buy }}" min="0.3" step="0.1" max="10" class="input">
+        <div style="display:flex;gap:5px;margin-top:6px">
+          {% for v, l in [(0.5,'0.5'),(0.8,'0.8'),(1.0,'1.0'),(1.5,'1.5'),(2.0,'2.0')] %}
+          <button onclick="document.getElementById('delay-inp').value={{ v }}" class="btn btn-ghost btn-sm">{{ l }}с</button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,.02);border:1px solid var(--acc-border)">
+        <div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;color:var(--text)">Пропускать кланы</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px">Не покупать участников кланов</div>
+        </div>
+        <label class="tw"><input type="checkbox" id="clans-cb" {% if cfg.skip_clans %}checked{% endif %}><div class="ttrack"></div></label>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── СЕССИЯ ── -->
+  <div class="hud-card">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--acc-border)">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9.5px;color:var(--text-dim);letter-spacing:.15em">// СЕССИЯ И АВТОРИЗАЦИЯ</div>
+    </div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:8px">
+
+      {% for label, val, col in [
+        ('ИГРОК',     sess.vk_first ~ ' ' ~ sess.vk_last,  'var(--text)'),
+        ('VK ID',     sess.vk_user_id or '—',               'var(--acc)'),
+        ('X-VERSION', sess.x_version or '—',                'var(--text-dim)'),
+        ('ТОКЕН',     'ACTIVE' if sess.user_token else 'MISSING', '#4ade80' if sess.user_token else '#f87171'),
+        ('X-INIT',    'LOADED' if sess.x_init_data else 'MISSING', '#4ade80' if sess.x_init_data else '#f87171'),
+      ] %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(255,255,255,.02);border:1px solid var(--acc-border)">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.1em">{{ label }}</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:{{ col }};font-weight:600">{{ val }}</span>
+      </div>
+      {% endfor %}
+
+      <div style="margin-top:4px">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.12em;margin-bottom:6px">ОБНОВИТЬ X-INIT-DATA</div>
+        <textarea id="new-xi" rows="3" placeholder="Вставь новый x-init-data..."
+          style="background:rgba(0,0,0,.7);border:1px solid var(--acc-border);padding:9px 10px;font-size:10px;color:var(--text-dim);outline:none;width:100%;resize:vertical;font-family:'Share Tech Mono',monospace;transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--acc-bright)'" onblur="this.style.borderColor='var(--acc-border)'"></textarea>
+        <button onclick="updateXInitData()" class="btn btn-ghost btn-sm" style="margin-top:6px">↺ ПРИМЕНИТЬ</button>
+      </div>
+
+      <div style="display:flex;gap:6px;margin-top:4px">
+        <button onclick="doReauth()" class="btn btn-ghost btn-sm" style="flex:1">◐ ПЕРЕАВТОРИЗАЦИЯ</button>
+        <a href="/logout" class="btn btn-danger btn-sm" style="flex:1;text-align:center">⏻ ВЫЙТИ</a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── СТАТИСТИКА СЕССИИ ── -->
+  <div class="hud-card">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--acc-border);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9.5px;color:var(--text-dim);letter-spacing:.15em">// СТАТИСТИКА СЕССИИ</div>
+      <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim)" id="uptime-val">{{ uptime }}</span>
+    </div>
+    <div style="padding:14px 16px;display:flex;flex-direction:column;gap:6px">
+      {% for ico, label, val, col in [
+        ('◈','КУПЛЕНО РАБОВ',   stats.bought_count,                   'var(--acc)'),
+        ('⬡','ПОТРАЧЕНО',       fmt(stats.bought_total)~' 🪙',         '#fbbf24'),
+        ('▲','ПРОДАНО',         stats.sold_count,                      '#f87171'),
+        ('◉','СОБРАНО МОНЕТ',   fmt(stats.revenue_collected)~' 🪙',    '#4ade80'),
+        ('◈','БОНУСОВ',         stats.bonus_collected,                  '#818cf8'),
+        ('✕','ОШИБОК',          stats.errors,                           '#f87171' if stats.errors else 'var(--text-dim)'),
+      ] %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:rgba(255,255,255,.02);border:1px solid var(--acc-border)">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);display:flex;align-items:center;gap:6px">
+          <span style="opacity:.5">{{ ico }}</span>{{ label }}
+        </span>
+        <span style="font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:{{ col }}">{{ val }}</span>
+      </div>
+      {% endfor %}
+      <button onclick="if(confirm('Сбросить статистику?'))location.reload()" class="btn btn-ghost btn-sm" style="margin-top:6px">↺ СБРОС СТАТИСТИКИ</button>
+    </div>
+  </div>
+
+  <!-- ── ЦЕЛИ АВТО-ПОКУПКИ ── -->
+  <div class="hud-card" style="grid-column:span 2">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--acc-border);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9.5px;color:var(--text-dim);letter-spacing:.15em">// ЦЕЛИ АВТО-ПОКУПКИ</div>
+      <span id="targets-count" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--acc);letter-spacing:.1em">{{ cfg.targets|length }} ЦЕЛЕЙ</span>
+    </div>
+    <div style="padding:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
+        <div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.12em;margin-bottom:6px">ДОБАВИТЬ VK ID</div>
+          <div style="display:flex;gap:6px">
+            <input id="target-input" type="number" placeholder="VK ID..." class="input" style="height:34px">
+            <button onclick="addTarget()" class="btn btn-primary btn-sm" style="white-space:nowrap">+ ДОБАВИТЬ</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.12em;margin-bottom:6px">УПРАВЛЕНИЕ</div>
+          <button onclick="clearAllTargets()" class="btn btn-danger btn-sm">✕ ОЧИСТИТЬ ВСЕ</button>
+        </div>
+      </div>
+      <div id="targets-list" style="display:flex;flex-wrap:wrap;gap:6px;min-height:32px">
+        {% if cfg.targets %}
+          {% for t in cfg.targets %}
+          <div data-id="{{ t }}" style="display:inline-flex;align-items:center;gap:6px;background:var(--acc-dim);border:1px solid var(--acc-border);padding:5px 10px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--acc)">
+            <span>◎</span> ID:{{ t }}
+            <button onclick="removeTarget({{ t }})" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:12px;line-height:1;padding:0 2px;transition:color .15s" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='var(--text-dim)'">✕</button>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:.08em">NO TARGETS — ДОБАВЬ VK ID</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ПРЕСЕТЫ СКАНЕРА ── -->
+  <div class="hud-card">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--acc-border)">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9.5px;color:var(--text-dim);letter-spacing:.15em">// ПРЕСЕТЫ СКАНЕРА</div>
+    </div>
+    <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+      {% for name, from_, to, price, desc in [
+        ('CHEAP HUNT',    1,       50000,   10000,  'Дешёвые новички · до 10К'),
+        ('MID RANGE',     100000,  500000,  100000, 'Средний диапазон · до 100К'),
+        ('HIGH VALUE',    1000000, 5000000, 500000, 'Топ игроки · до 500К'),
+      ] %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,.02);border:1px solid var(--acc-border);transition:border-color .15s" onmouseover="this.style.borderColor='var(--acc-bright)'" onmouseout="this.style.borderColor='var(--acc-border)'">
+        <div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:var(--acc);letter-spacing:.08em">{{ name }}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px">{{ desc }}</div>
+        </div>
+        <a href="/scanner?from={{ from_ }}&to={{ to }}&max={{ price }}" class="btn btn-ghost btn-sm">▶ ЗАПУСК</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ── DANGER ZONE ── -->
+  <div class="hud-card" style="border-color:rgba(220,38,38,.4)">
+    <div style="padding:12px 16px;border-bottom:1px solid rgba(220,38,38,.2)">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9.5px;color:#f87171;letter-spacing:.15em">// DANGER ZONE</div>
+    </div>
+    <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.08em;margin-bottom:4px">[!] НЕОБРАТИМЫЕ ДЕЙСТВИЯ</div>
+      {% for label, desc, action in [
+        ('ОЧИСТИТЬ СЕССИЮ',    'Удалить токен и x-init-data',      '/logout'),
+        ('СБРОС НАСТРОЕК',     'Вернуть параметры по умолчанию',   '#'),
+      ] %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(220,38,38,.04);border:1px solid rgba(220,38,38,.15)">
+        <div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;color:var(--text)">{{ label }}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px">{{ desc }}</div>
+        </div>
+        {% if loop.index == 1 %}
+        <a href="{{ action }}" onclick="return confirm('Очистить сессию?')" class="btn btn-danger btn-sm">EXEC</a>
+        {% else %}
+        <button onclick="resetSettings()" class="btn btn-danger btn-sm">EXEC</button>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let autoOn={{ 'true' if auto_on else 'false' }};
+
+async function toggleAuto(){
+  const r=await apiFetch('/api/auto/toggle');
+  if(r.error){showToast(r.error,'err');return;}
+  autoOn=r.running;
+  const btn=document.getElementById('auto-btn');
+  const badge=document.getElementById('auto-badge');
+  if(autoOn){
+    btn.textContent='⏹ СТОП';btn.className='btn btn-danger btn-sm';
+    badge.textContent='■ ACTIVE';badge.style.color='#4ade80';
+    showToast('AUTO-COLLECT ACTIVATED','ok');
+  } else {
+    btn.textContent='▶ СТАРТ';btn.className='btn btn-success btn-sm';
+    badge.textContent='□ IDLE';badge.style.color='var(--text-dim)';
+    showToast('AUTO-COLLECT STOPPED','info');
+  }
+}
+
+async function saveAll(){
+  const r=await apiFetch('/api/settings','POST',{
+    max_price:        parseInt(document.getElementById('max-price-inp').value),
+    max_buy:          parseInt(document.getElementById('max-buy-inp').value),
+    revenue_interval: parseInt(document.getElementById('interval-inp').value),
+    delay_buy:        parseFloat(document.getElementById('delay-inp').value),
+    auto_bonus:       document.getElementById('bonus-cb').checked,
+    skip_clans:       document.getElementById('clans-cb').checked,
+  });
+  if(r.error){showToast(r.error,'err');return;}
+  showToast('[OK] SETTINGS SAVED','ok');
+}
+
+async function doReauth(){
+  const r=await apiFetch('/api/reauth');
+  if(r.ok)showToast('[OK] TOKEN REFRESHED','ok');
+  else showToast('[ERR] NEED NEW X-INIT-DATA','err');
+}
+
+async function updateXInitData(){
+  const xi=document.getElementById('new-xi').value.trim();
+  if(!xi||xi.length<30){showToast('[!] TOO SHORT','warn');return;}
+  const r=await apiFetch('/api/settings/xi','POST',{x_init_data:xi});
+  if(r.ok){showToast('[OK] X-INIT UPDATED','ok');setTimeout(()=>location.reload(),1500);}
+  else showToast('[ERR] '+(r.error||'NO RESPONSE'),'err');
+}
+
+let targets={{ (cfg.targets or []) | tojson }};
+
+function renderTargets(){
+  const list=document.getElementById('targets-list');
+  document.getElementById('targets-count').textContent=targets.length+' ЦЕЛЕЙ';
+  if(!targets.length){
+    list.innerHTML='<div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--text-dim);letter-spacing:.08em">NO TARGETS — ДОБАВЬ VK ID</div>';
+    return;
+  }
+  list.innerHTML=targets.map(t=>`
+    <div data-id="${t}" style="display:inline-flex;align-items:center;gap:6px;background:var(--acc-dim);border:1px solid var(--acc-border);padding:5px 10px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--acc)">
+      <span>◎</span> ID:${t}
+      <button onclick="removeTarget(${t})" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:12px;line-height:1;padding:0 2px;transition:color .15s" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='var(--text-dim)'">✕</button>
+    </div>`).join('');
+}
+
+async function addTarget(){
+  const inp=document.getElementById('target-input');
+  const id=parseInt(inp.value);
+  if(!id||id<=0){showToast('[!] ENTER VALID VK ID','warn');return;}
+  if(targets.includes(id)){showToast('[!] ALREADY IN LIST','warn');return;}
+  targets.push(id);inp.value='';
+  await apiFetch('/api/settings','POST',{targets});
+  renderTargets();
+  showToast('[OK] TARGET ADDED: id:'+id,'ok');
+}
+
+async function removeTarget(id){
+  targets=targets.filter(t=>t!==id);
+  await apiFetch('/api/settings','POST',{targets});
+  renderTargets();
+  showToast('[>] REMOVED: id:'+id,'info');
+}
+
+async function clearAllTargets(){
+  if(!confirm('CLEAR ALL TARGETS?'))return;
+  targets=[];
+  await apiFetch('/api/settings','POST',{targets});
+  renderTargets();
+  showToast('[>] ALL TARGETS CLEARED','info');
+}
+
+async function resetSettings(){
+  if(!confirm('RESET ALL SETTINGS TO DEFAULT?'))return;
+  const r=await apiFetch('/api/settings','POST',{max_price:500000,max_buy:20,revenue_interval:300,delay_buy:1.5,auto_bonus:true,skip_clans:false});
+  if(r.ok){showToast('[OK] SETTINGS RESET','ok');setTimeout(()=>location.reload(),800);}
+}
+
+let _t0=Date.now();
+setInterval(()=>{
+  const d=Math.floor((Date.now()-_t0)/1000);
+  const h=Math.floor(d/3600),m=Math.floor((d%3600)/60),s=d%60;
+  const el=document.getElementById('uptime-val');
+  if(el)el.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+},1000);
+</script>
+{% endblock %}
